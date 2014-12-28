@@ -16,6 +16,7 @@ import org.eclipse.oomph.setup.User;
 import org.eclipse.oomph.setup.Workspace;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.CatalogManager;
+import org.eclipse.oomph.setup.ui.SetupUIPlugin;
 import org.eclipse.oomph.ui.HelpSupport.HelpProvider;
 import org.eclipse.oomph.ui.OomphWizardDialog;
 import org.eclipse.oomph.ui.PersistentButton;
@@ -27,19 +28,28 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.edit.provider.ComposedAdapterFactory;
 
 import org.eclipse.jface.dialogs.IDialogSettings;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.IWizardPage;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Eike Stepper
@@ -153,6 +163,27 @@ public abstract class SetupWizardPage extends WizardPage implements HelpProvider
     pageControl.setLayout(gridLayout);
     super.setControl(pageControl);
     setPageComplete(false);
+
+    if (false)
+    {
+      StepIndicatorCanvas canvas = new StepIndicatorCanvas(pageControl, SWT.NONE);
+      canvas.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, false));
+
+      List<String> steps = new ArrayList<String>();
+      IWizardPage[] pages = getWizard().getPages();
+      for (int i = 0; i < pages.length; i++)
+      {
+        IWizardPage page = pages[i];
+        steps.add(page.getTitle());
+
+        if (page == this)
+        {
+          canvas.setCurrentStep(i);
+        }
+      }
+
+      canvas.setSteps(steps.toArray(new String[steps.size()]));
+    }
 
     Composite uiContainer = new Composite(pageControl, SWT.NONE);
     uiContainer.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true));
@@ -276,11 +307,273 @@ public abstract class SetupWizardPage extends WizardPage implements HelpProvider
     }
   }
 
+  private TitleBarUpdater titleBarUpdater = new StepIndicatorTitleBarUpdater();
+
+  @Override
+  public void setImageDescriptor(ImageDescriptor imageDescriptor)
+  {
+    titleBarUpdater.setImageDescriptor(imageDescriptor);
+  }
+
+  @Override
+  public String getTitle()
+  {
+    return titleBarUpdater.getTitle();
+  }
+
+  @Override
+  public void setTitle(String title)
+  {
+    titleBarUpdater.setTitle(title);
+  }
+
+  @Override
+  public void setDescription(String description)
+  {
+    titleBarUpdater.setDescription(description);
+  }
+
+  @Override
+  public void setMessage(String message, int type)
+  {
+    titleBarUpdater.setMessage(message, type);
+  }
+
+  @Override
+  public void setErrorMessage(String message)
+  {
+    titleBarUpdater.setErrorMessage(message);
+  }
+
+  private void superSetImageDescriptor(ImageDescriptor imageDescriptor)
+  {
+    super.setImageDescriptor(imageDescriptor);
+  }
+
+  public String superGetTitle()
+  {
+    return super.getTitle();
+  }
+
+  private void superSetTitle(String title)
+  {
+    super.setTitle(title);
+  }
+
+  private void superSetDescription(String description)
+  {
+    super.setDescription(description);
+  }
+
+  private void superSetMessage(String message, int type)
+  {
+    super.setMessage(message, type);
+  }
+
+  private void superSetErrorMessage(String message)
+  {
+    super.setErrorMessage(message);
+  }
+
   protected static GridLayout createGridLayout(int numColumns)
   {
     GridLayout layout = new GridLayout(numColumns, false);
     layout.marginWidth = 0;
     layout.marginHeight = 0;
     return layout;
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  public interface TitleBarUpdater
+  {
+    public void setImageDescriptor(ImageDescriptor imageDescriptor);
+
+    public String getTitle();
+
+    public void setTitle(String title);
+
+    public void setDescription(String description);
+
+    public void setMessage(String message, int type);
+
+    public void setErrorMessage(String message);
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  private final class DefaultTitleBarUpdater implements TitleBarUpdater
+  {
+    public void setImageDescriptor(ImageDescriptor imageDescriptor)
+    {
+      superSetImageDescriptor(imageDescriptor);
+    }
+
+    public String getTitle()
+    {
+      return superGetTitle();
+    }
+
+    public void setTitle(String title)
+    {
+      superSetTitle(title);
+    }
+
+    public void setDescription(String description)
+    {
+      superSetDescription(description);
+    }
+
+    public void setMessage(String message, int type)
+    {
+      superSetMessage(message, type);
+    }
+
+    public void setErrorMessage(String message)
+    {
+      superSetErrorMessage(message);
+    }
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  private final class StepIndicatorTitleBarUpdater implements TitleBarUpdater
+  {
+    private static final int BORDER_WIDTH = 10;
+
+    private final Image titleImage = SetupUIPlugin.INSTANCE.getSWTImage("install_wiz.png");
+
+    private final ImageData titleImageData = titleImage.getImageData();
+
+    private ImageDescriptor imageDescriptor;
+
+    private String title;
+
+    private String description;
+
+    private String message;
+
+    private int type;
+
+    private String errorMessage;
+
+    private boolean layoutChanged;
+
+    public StepIndicatorTitleBarUpdater()
+    {
+
+    }
+
+    public void setImageDescriptor(ImageDescriptor imageDescriptor)
+    {
+      this.imageDescriptor = imageDescriptor;
+      updateTitleBar();
+    }
+
+    public String getTitle()
+    {
+      return title;
+    }
+
+    public void setTitle(String title)
+    {
+      this.title = title;
+      updateTitleBar();
+    }
+
+    public void setDescription(String description)
+    {
+      this.description = description;
+      updateTitleBar();
+    }
+
+    public void setMessage(String message, int type)
+    {
+      this.message = message;
+      this.type = type;
+      updateTitleBar();
+    }
+
+    public void setErrorMessage(String message)
+    {
+      errorMessage = message;
+      updateTitleBar();
+    }
+
+    private void updateTitleBar()
+    {
+      WizardDialog dialog = (WizardDialog)getContainer();
+      if (dialog == null)
+      {
+        return;
+      }
+
+      final Shell shell = dialog.getShell();
+
+      StepIndicator stepIndicator = new StepIndicator(shell.getDisplay(), getControl().getFont())
+      {
+        @Override
+        protected Rectangle getClientArea()
+        {
+          Rectangle clientArea = shell.getClientArea();
+          clientArea.width -= titleImageData.width + 2 * BORDER_WIDTH;
+          return clientArea;
+        }
+      };
+
+      List<String> steps = new ArrayList<String>();
+      IWizardPage[] pages = getWizard().getPages();
+      boolean currentPage = isCurrentPage();
+
+      for (int i = 0; i < pages.length; i++)
+      {
+        IWizardPage page = pages[i];
+        steps.add(page.getTitle());
+
+        if (currentPage)
+        {
+          stepIndicator.setCurrentStep(i);
+        }
+      }
+
+      stepIndicator.setSteps(steps.toArray(new String[steps.size()]));
+
+      if (currentPage)
+      {
+
+        int width = shell.getClientArea().width;
+        int height = titleImageData.height;
+
+        final Image buffer = new Image(shell.getDisplay(), width, height);
+
+        GC gc = new GC(buffer);
+        gc.drawImage(titleImage, width - titleImageData.width, 0);
+        stepIndicator.paint(gc, BORDER_WIDTH, 6);
+        gc.dispose();
+
+        ImageDescriptor descriptor = new ImageDescriptor()
+        {
+          @Override
+          public ImageData getImageData()
+          {
+            return buffer.getImageData();
+          }
+        };
+
+        superSetImageDescriptor(descriptor);
+
+        if (!layoutChanged)
+        {
+          shell.layout(true, true);
+          layoutChanged = true;
+        }
+
+        // dialog.setTitleImage(buffer);
+        // dialog.updateTitleBar();
+      }
+    }
   }
 }
