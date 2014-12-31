@@ -56,10 +56,8 @@ import org.osgi.framework.BundleContext;
 /**
  * @author Eike Stepper
  */
-public final class InstallerDialog extends SetupWizardDialog
+public final class InstallerDialog extends SetupWizardDialog implements InstallerUI
 {
-  public static final int RETURN_RESTART = -4;
-
   private final IPageChangedListener pageChangedListener = new PageChangedListener();
 
   private final boolean restarted;
@@ -76,9 +74,16 @@ public final class InstallerDialog extends SetupWizardDialog
 
   private Link versionLink;
 
+  private Link simpleLink;
+
   public InstallerDialog(Shell parentShell, boolean restarted)
   {
-    super(parentShell, new SetupWizard.Installer());
+    this(parentShell, new SetupWizard.Installer(), restarted);
+  }
+
+  public InstallerDialog(Shell parentShell, Installer installer, boolean restarted)
+  {
+    super(parentShell, installer);
     this.restarted = restarted;
     addPageChangedListener(pageChangedListener);
   }
@@ -289,6 +294,30 @@ public final class InstallerDialog extends SetupWizardDialog
     });
   }
 
+  @Override
+  protected void createButtonsForButtonBar(Composite parent)
+  {
+    GridLayout parentLayout = (GridLayout)parent.getLayout();
+    parentLayout.numColumns++;
+
+    simpleLink = new Link(parent, SWT.NO_FOCUS);
+    simpleLink.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false));
+    simpleLink.setText("<a>Simple</a>");
+    simpleLink.setToolTipText("Switch to simple mode");
+    simpleLink.addSelectionListener(new SelectionAdapter()
+    {
+      @Override
+      public void widgetSelected(SelectionEvent e)
+      {
+        close();
+        setReturnCode(RETURN_SIMPLE);
+      }
+    });
+
+    AccessUtil.setKey(simpleLink, "simple");
+    super.createButtonsForButtonBar(parent);
+  }
+
   private void setProductVersionLink(Composite parent)
   {
     GridLayout parentLayout = (GridLayout)parent.getLayout();
@@ -302,6 +331,11 @@ public final class InstallerDialog extends SetupWizardDialog
 
     Thread thread = new ProductVersionInitializer();
     thread.start();
+  }
+
+  public int show()
+  {
+    return open();
   }
 
   public void showAbout()
@@ -374,7 +408,7 @@ public final class InstallerDialog extends SetupWizardDialog
                   }
                 });
 
-                versionLink.setText("<a>" + version + "</a>"); //$NON-NLS-1$
+                versionLink.setText("<a>" + version + "</a>");
                 versionLink.getParent().layout();
               }
               catch (Exception ex)

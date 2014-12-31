@@ -17,6 +17,7 @@ import org.eclipse.oomph.setup.ui.AbstractSetupDialog;
 import org.eclipse.oomph.setup.ui.Questionnaire;
 import org.eclipse.oomph.setup.ui.SetupUIPlugin;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizard;
+import org.eclipse.oomph.setup.ui.wizards.SetupWizard.Installer;
 import org.eclipse.oomph.ui.ErrorDialog;
 import org.eclipse.oomph.util.PropertiesUtil;
 
@@ -38,6 +39,9 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
+import org.osgi.service.prefs.BackingStoreException;
+import org.osgi.service.prefs.Preferences;
+
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +51,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class InstallerApplication implements IApplication
 {
+  private static final String MODE_KEY = "mode";
+
   public static final Integer EXIT_ERROR = 1;
+
+  private Mode mode = Mode.SIMPLE;
 
   private Integer run(final IApplicationContext context) throws Exception
   {
@@ -83,7 +91,7 @@ public class InstallerApplication implements IApplication
     final Display display = Display.getDefault();
     Display.setAppName(AbstractSetupDialog.SHELL_TEXT);
 
-    final InstallerDialog[] installerDialog = { null };
+    final InstallerUI[] installerDialog = { null };
     if (Platform.WS_COCOA.equals(Platform.getWS()))
     {
       Runnable about = new Runnable()
@@ -144,38 +152,85 @@ public class InstallerApplication implements IApplication
         org.eclipse.equinox.internal.p2.repository.Activator.getContext(), IProvisioningAgent.SERVICE_NAME);
     agent.registerService(UIServices.SERVICE_NAME, SetupWizard.Installer.SERVICE_UI);
 
-    installerDialog[0] = new InstallerDialog(null, restarted);
-    final int retcode = installerDialog[0].open();
-    if (retcode == InstallerDialog.RETURN_RESTART)
+    Preferences preferences = SetupInstallerPlugin.INSTANCE.getConfigurationPreferences();
+    String modeName = preferences.get(MODE_KEY, Mode.SIMPLE.name());
+    mode = Mode.valueOf(modeName);
+
+    for (;;)
     {
-      try
+      Installer installer = new Installer();
+
+      if (mode == Mode.ADVANCED)
       {
-        restarting.createNewFile();
+        installerDialog[0] = new InstallerDialog(null, installer, restarted);
       }
-      catch (Throwable ex)
+      else
       {
-        //$FALL-THROUGH$
+        SimpleInstallerDialog dialog = new SimpleInstallerDialog(display, installer);
+        installer.setSimpleShell(dialog);
+        installerDialog[0] = dialog;
       }
 
-      String launcher = getLauncher();
-      if (launcher != null)
+      final int retcode = installerDialog[0].show();
+      if (retcode == InstallerUI.RETURN_SIMPLE)
+      {
+        setMode(preferences, Mode.SIMPLE);
+        continue;
+      }
+
+      if (retcode == InstallerUI.RETURN_ADVANCED)
+      {
+        setMode(preferences, Mode.ADVANCED);
+        continue;
+      }
+
+      if (retcode == InstallerUI.RETURN_RESTART)
       {
         try
         {
-          // EXIT_RESTART often makes the new process come up behind other windows, so try a fresh native process first.
-          Runtime.getRuntime().exec(launcher);
-          return EXIT_OK;
+          restarting.createNewFile();
         }
         catch (Throwable ex)
         {
           //$FALL-THROUGH$
         }
+
+        String launcher = getLauncher();
+        if (launcher != null)
+        {
+          try
+          {
+            // EXIT_RESTART often makes the new process come up behind other windows, so try a fresh native process first.
+            Runtime.getRuntime().exec(launcher);
+            return EXIT_OK;
+          }
+          catch (Throwable ex)
+          {
+            //$FALL-THROUGH$
+          }
+        }
+
+        return EXIT_RESTART;
       }
 
-      return EXIT_RESTART;
+      return EXIT_OK;
     }
+  }
 
-    return EXIT_OK;
+  private void setMode(Preferences preferences, Mode mode)
+  {
+    this.mode = mode;
+
+    try
+    {
+      String modeName = mode.name();
+      preferences.put(MODE_KEY, modeName);
+      preferences.flush();
+    }
+    catch (BackingStoreException ex)
+    {
+      SetupInstallerPlugin.INSTANCE.log(ex);
+    }
   }
 
   public Object start(IApplicationContext context) throws Exception
@@ -307,5 +362,13 @@ public class InstallerApplication implements IApplication
     }
 
     return null;
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  public static enum Mode
+  {
+    SIMPLE, ADVANCED;
   }
 }
