@@ -11,25 +11,52 @@
 package org.eclipse.oomph.setup.internal.installer;
 
 import org.eclipse.oomph.base.Annotation;
+import org.eclipse.oomph.base.util.BaseUtil;
+import org.eclipse.oomph.internal.setup.SetupPrompter;
+import org.eclipse.oomph.p2.core.AgentManager;
 import org.eclipse.oomph.p2.core.BundlePool;
 import org.eclipse.oomph.p2.core.P2Util;
 import org.eclipse.oomph.p2.internal.ui.AgentManagerDialog;
 import org.eclipse.oomph.setup.AnnotationConstants;
+import org.eclipse.oomph.setup.AttributeRule;
+import org.eclipse.oomph.setup.Installation;
 import org.eclipse.oomph.setup.Product;
 import org.eclipse.oomph.setup.ProductVersion;
 import org.eclipse.oomph.setup.Scope;
+import org.eclipse.oomph.setup.SetupFactory;
+import org.eclipse.oomph.setup.SetupPackage;
+import org.eclipse.oomph.setup.SetupTask;
+import org.eclipse.oomph.setup.SetupTaskContext;
+import org.eclipse.oomph.setup.Trigger;
+import org.eclipse.oomph.setup.User;
+import org.eclipse.oomph.setup.VariableTask;
+import org.eclipse.oomph.setup.internal.core.SetupContext;
+import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.installer.SimpleInstallerDialog.ToolButton;
+import org.eclipse.oomph.setup.log.ProgressLog;
+import org.eclipse.oomph.setup.ui.AbstractSetupDialog;
 import org.eclipse.oomph.setup.ui.SetupUIPlugin;
+import org.eclipse.oomph.setup.ui.UnsignedContentDialog;
 import org.eclipse.oomph.setup.ui.wizards.ProductPage;
+import org.eclipse.oomph.setup.ui.wizards.ProgressPage;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizardPage;
 import org.eclipse.oomph.ui.StackComposite;
 import org.eclipse.oomph.ui.UIUtil;
 import org.eclipse.oomph.util.IOUtil;
+import org.eclipse.oomph.util.ObjectUtil;
+import org.eclipse.oomph.util.OomphPlugin.Preference;
 import org.eclipse.oomph.util.PropertiesUtil;
 import org.eclipse.oomph.util.StringUtil;
+import org.eclipse.oomph.util.UserCallback;
 
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.resource.URIConverter;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.equinox.p2.metadata.ILicense;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -37,6 +64,8 @@ import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationAdapter;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.custom.CCombo;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
@@ -46,18 +75,18 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Text;
 
-import org.osgi.service.prefs.BackingStoreException;
-import org.osgi.service.prefs.Preferences;
-
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.cert.Certificate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,7 +94,9 @@ import java.util.Map;
  */
 public class SimpleInstallerVariablePage extends SimpleInstallerPage
 {
-  private static final String POOL_ENABLED_KEY = "poolEnabled";
+  private static final Preference PREF_INSTALL_CONTAINER = SetupInstallerPlugin.INSTANCE.getConfigurationPreference("installContainer");
+
+  private static final Preference PREF_POOL_ENABLED = SetupInstallerPlugin.INSTANCE.getConfigurationPreference("poolEnabled");
 
   private static final String TEXT_LOG = "Show installation log";
 
@@ -109,6 +140,10 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
 
   private ToolButton poolButton;
 
+  private String installContainer;
+
+  private String installFolder;
+
   private Thread installThread;
 
   private StackComposite installStack;
@@ -116,6 +151,8 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
   private ToolButton installButton;
 
   private boolean installed;
+
+  private SetupTaskPerformer performer;
 
   private ProgressBar progressBar;
 
@@ -129,8 +166,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
   {
     super(parent, style, dialog);
 
-    Preferences preferences = SetupInstallerPlugin.INSTANCE.getConfigurationPreferences();
-    poolEnabled = preferences.getBoolean(POOL_ENABLED_KEY, true);
+    poolEnabled = PREF_POOL_ENABLED.get(true);
     enablePool(poolEnabled);
 
     GridLayout layout = ProductPage.createGridLayout(4);
@@ -176,7 +212,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     versionComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
     versionComposite.setLayout(SetupWizardPage.createGridLayout(4));
 
-    versionCombo = new CCombo(versionComposite, SWT.BORDER|SWT.READ_ONLY);
+    versionCombo = new CCombo(versionComposite, SWT.BORDER | SWT.READ_ONLY);
     versionCombo.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
     versionCombo.setFont(font);
     versionCombo.addSelectionListener(new SelectionAdapter()
@@ -241,10 +277,40 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     folderText = new Text(this, SWT.BORDER);
     folderText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
     folderText.setFont(font);
+    folderText.addModifyListener(new ModifyListener()
+    {
+      public void modifyText(ModifyEvent e)
+      {
+        String dir = folderText.getText();
+        validateFolderText(dir);
+      }
+    });
 
     folderButton = new ToolButton(this, SWT.PUSH, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/folder.png"), false);
     folderButton.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
     folderButton.setToolTipText("Select installation folder...");
+    folderButton.addSelectionListener(new SelectionAdapter()
+    {
+      @Override
+      public void widgetSelected(SelectionEvent e)
+      {
+        DirectoryDialog dialog = new DirectoryDialog(getShell());
+        dialog.setText(AbstractSetupDialog.SHELL_TEXT);
+        dialog.setMessage("Select installation folder...");
+
+        if (!StringUtil.isEmpty(installFolder))
+        {
+          dialog.setFilterPath(installFolder);
+        }
+
+        String dir = dialog.open();
+        if (dir != null)
+        {
+          validateFolderText(dir);
+          folderText.setText(dir);
+        }
+      }
+    });
 
     poolButton = new ToolButton(this, SWT.PUSH, getBundlePoolImage(), false);
     poolButton.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
@@ -307,7 +373,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       {
         if (installed)
         {
-          launch();
+          launchProduct();
         }
         else
         {
@@ -348,7 +414,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
         }
         else if (TEXT_LAUNCH.equals(e.text))
         {
-          launch();
+          launchProduct();
           return;
         }
 
@@ -439,7 +505,8 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     versionCombo.setSelection(new Point(0, 0));
     productVersionSelected(defaultProductVersion);
 
-    folderText.setText(getDefaultInstallationFolder());
+    installFolder = getDefaultInstallationFolder();
+    folderText.setText(installFolder);
 
     installStack.setTopControl(installButton);
     installButton.setImage(SetupInstallerPlugin.INSTANCE.getSWTImage("simple/download_small.png"));
@@ -475,7 +542,12 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       name = name.substring(lastDot + 1);
     }
 
-    for (int i = 0; i < Integer.MAX_VALUE; i++)
+    if (installContainer == null)
+    {
+      installContainer = PREF_INSTALL_CONTAINER.get(PropertiesUtil.USER_HOME);
+    }
+
+    for (int i = 0; i < 1000; i++)
     {
       String filename = name;
       if (i != 0)
@@ -483,7 +555,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
         filename += i;
       }
 
-      File folder = new File(PropertiesUtil.USER_HOME, filename);
+      File folder = new File(installContainer, filename);
       if (!folder.exists())
       {
         return folder.getAbsolutePath();
@@ -503,17 +575,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     if (this.poolEnabled != poolEnabled)
     {
       this.poolEnabled = poolEnabled;
-
-      try
-      {
-        Preferences preferences = SetupInstallerPlugin.INSTANCE.getConfigurationPreferences();
-        preferences.putBoolean(POOL_ENABLED_KEY, poolEnabled);
-        preferences.flush();
-      }
-      catch (BackingStoreException ex)
-      {
-        SetupInstallerPlugin.INSTANCE.log(ex);
-      }
+      PREF_POOL_ENABLED.set(poolEnabled);
     }
 
     if (poolEnabled)
@@ -550,7 +612,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       protected void createUI(Composite parent)
       {
         final Button enabledButton = new Button(parent, SWT.CHECK);
-        enabledButton.setText("Shared bundle pool enabled");
+        enabledButton.setText("Enable shared bundle pool");
         enabledButton.setSelection(poolEnabled);
         enabledButton.addSelectionListener(new SelectionAdapter()
         {
@@ -639,45 +701,66 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       @Override
       public void run()
       {
-        final boolean[] canceled = { false };
+        performer = null;
+        final SimpleProgress progress = new SimpleProgress();
 
         try
         {
-          final int tasks = 100;
-          for (int i = 0; i < tasks; i++)
+          if (pool != null)
           {
-            final int task = i + 1;
-
-            UIUtil.syncExec(new Runnable()
-            {
-              public void run()
-              {
-                try
-                {
-                  int selection = (progressBar.getMaximum() - progressBar.getMinimum() + 1) * task / tasks;
-                  progressBar.setSelection(selection);
-                  progressLabel.setText("Executing setup task " + task);
-                }
-                catch (SWTException ex)
-                {
-                  //$FALL-THROUGH$
-                }
-              }
-            });
-
-            try
-            {
-              sleep(50);
-            }
-            catch (InterruptedException ex)
-            {
-              canceled[0] = true;
-              return;
-            }
+            P2Util.getAgentManager().setDefaultBundlePool(SetupUIPlugin.INSTANCE.getSymbolicName(), pool);
+            System.setProperty(AgentManager.PROP_BUNDLE_POOL_LOCATION, pool.getLocation().getAbsolutePath());
           }
+          else
+          {
+            System.clearProperty(AgentManager.PROP_BUNDLE_POOL_LOCATION);
+          }
+
+          ResourceSet resourceSet = installer.getResourceSet();
+          URIConverter uriConverter = resourceSet.getURIConverter();
+
+          SetupContext setupContext = SetupContext.create(resourceSet, selectedProductVersion);
+          User user = setupContext.getUser();
+
+          AttributeRule oldRule = setInstallationLocationRule(user);
+          PREF_INSTALL_CONTAINER.set(installContainer);
+
+          SimplePrompter prompter = new SimplePrompter();
+          // prompter.put(INSTALL_LOCATION_VARIABLE, installFolder);
+          // prompter.put("installation.id", new File(installFolder).getName());
+
+          performer = SetupTaskPerformer.create(uriConverter, prompter, Trigger.BOOTSTRAP, setupContext, false);
+          performer.getUnresolvedVariables().clear();
+
+          progress.beginTask("Installing", performer.initNeededSetupTasks().size() + 1);
+
+          performer.setProgress(progress);
+          performer.put(ILicense.class, ProgressPage.LICENSE_CONFIRMER); // TODO Not saved
+          performer.put(Certificate.class, UnsignedContentDialog.createUnsignedContentConfirmer(performer.getUser(), false)); // TODO Not saved
+          performer.perform();
+
+          progress.task(null);
+
+          Installation installation = setupContext.getInstallation();
+          BaseUtil.saveEObject(installation); // TODO Not saved
+        }
+        catch (Exception ex)
+        {
+          ex.printStackTrace();
         }
         finally
         {
+          if (performer != null)
+          {
+            IOUtil.close(performer.getLogStream());
+          }
+
+          // final boolean canceled = monitor.isCanceled();
+          // if (!canceled)
+          // {
+          // monitor.done();
+          // }
+
           UIUtil.syncExec(new Runnable()
           {
             public void run()
@@ -687,7 +770,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
                 cancelButton.setVisible(false);
                 progressLabel.setForeground(getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
 
-                if (canceled[0])
+                if (progress.isCanceled())
                 {
                   installButton.setToolTipText("Install");
                   progressLabel.setText("Installation canceled");
@@ -719,6 +802,29 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
             }
           });
         }
+      }
+
+      private AttributeRule setInstallationLocationRule(User user)
+      {
+        URI attributeURI = SetupTaskPerformer.getAttributeURI(SetupPackage.Literals.INSTALLATION_TASK__LOCATION);
+
+        EList<AttributeRule> attributeRules = user.getAttributeRules();
+        for (AttributeRule attributeRule : attributeRules)
+        {
+          if (attributeURI.equals(attributeRule.getAttributeURI()))
+          {
+            AttributeRule oldRule = EcoreUtil.copy(attributeRule);
+            attributeRule.setValue(installFolder);
+            return oldRule;
+          }
+        }
+
+        AttributeRule attributeRule = SetupFactory.eINSTANCE.createAttributeRule();
+        attributeRule.setAttributeURI(attributeURI);
+        attributeRule.setValue(installFolder);
+
+        attributeRules.add(attributeRule);
+        return null;
       }
     };
 
@@ -770,9 +876,222 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     installStack.setTopControl(installButton);
   }
 
-  private void launch()
+  private void launchProduct()
   {
-    System.out.println("Launching...");
+    try
+    {
+      ProgressPage.launchProduct(performer);
+    }
+    catch (Exception ex)
+    {
+      ex.printStackTrace();
+      int xxx;
+    }
+
     dialog.exitSelected();
+  }
+
+  private void validateFolderText(String dir)
+  {
+    installFolder = dir;
+    // TODO validate dir?
+
+    try
+    {
+      File folder = new File(installFolder);
+
+      File parentFolder = folder.getParentFile();
+      if (parentFolder != null)
+      {
+        installContainer = parentFolder.getAbsolutePath();
+      }
+    }
+    catch (Exception ex)
+    {
+      //$FALL-THROUGH$
+    }
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  private final class SimplePrompter extends HashMap<String, String> implements SetupPrompter
+  {
+    private static final long serialVersionUID = 1L;
+
+    public SimplePrompter()
+    {
+    }
+
+    public boolean promptVariables(List<? extends SetupTaskContext> performers)
+    {
+      for (SetupTaskContext performer : performers)
+      {
+        List<VariableTask> unresolvedVariables = ((SetupTaskPerformer)performer).getUnresolvedVariables();
+        for (VariableTask variable : unresolvedVariables)
+        {
+          String name = variable.getName();
+          // System.out.println(name);
+
+          String value = get(name);
+          if (value == null)
+          {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    public String getValue(VariableTask variable)
+    {
+      String name = variable.getName();
+      // System.out.println(name);
+
+      return get(name);
+    }
+
+    public UserCallback getUserCallback()
+    {
+      return null;
+    }
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  private final class SimpleProgress implements ProgressLog, Runnable
+  {
+    private volatile String name;
+
+    private volatile double totalWork;
+
+    private volatile double work;
+
+    private volatile boolean canceled;
+
+    private volatile boolean done;
+
+    private int lastSelection = -1;
+
+    private String lastName;
+
+    public synchronized void log(String line, boolean filter)
+    {
+      name = line;
+    }
+
+    public void log(String line)
+    {
+      log(line, true);
+    }
+
+    public void log(IStatus status)
+    {
+      String string = SetupInstallerPlugin.toString(status);
+      log(string, false);
+    }
+
+    public void log(Throwable t)
+    {
+      String string = SetupInstallerPlugin.toString(t);
+      log(string, false);
+    }
+
+    public synchronized void task(SetupTask setupTask)
+    {
+      if (setupTask != null)
+      {
+        name = "Performing setup task " + setupTask.eClass().getName();
+      }
+      else
+      {
+        name = null;
+      }
+
+      if (++work == totalWork)
+      {
+        done = true;
+      }
+    }
+
+    public void setTerminating()
+    {
+    }
+
+    public synchronized boolean isCanceled()
+    {
+      return canceled;
+    }
+
+    public synchronized void setCanceled(boolean canceled)
+    {
+      this.canceled = canceled;
+    }
+
+    public synchronized void beginTask(String name, int totalWork)
+    {
+      this.name = name;
+      if (this.totalWork == 0)
+      {
+        this.totalWork = totalWork;
+        schedule();
+      }
+    }
+
+    public void run()
+    {
+      String name;
+      double totalWork;
+      double work;
+      boolean canceled;
+      boolean done;
+
+      synchronized (this)
+      {
+        name = this.name;
+        totalWork = this.totalWork;
+        work = this.work;
+        canceled = this.canceled;
+        done = this.done;
+      }
+
+      if (!canceled)
+      {
+        int smin = progressBar.getMinimum();
+        int smax = progressBar.getMaximum();
+        int selection = (int)(work * (smax - smin) / totalWork + smin);
+
+        try
+        {
+          if (selection != lastSelection)
+          {
+            lastSelection = selection;
+            progressBar.setSelection(selection);
+          }
+
+          if (!ObjectUtil.equals(name, lastName))
+          {
+            lastName = name;
+            progressLabel.setText(StringUtil.safe(name));
+          }
+        }
+        catch (SWTException ex)
+        {
+          return;
+        }
+
+        if (!done)
+        {
+          schedule();
+        }
+      }
+    }
+
+    private void schedule()
+    {
+      UIUtil.asyncExec(getDisplay(), this);
+    }
   }
 }

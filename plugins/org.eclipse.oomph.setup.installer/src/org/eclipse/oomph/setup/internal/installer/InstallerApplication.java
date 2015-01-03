@@ -19,6 +19,7 @@ import org.eclipse.oomph.setup.ui.SetupUIPlugin;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizard;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizard.Installer;
 import org.eclipse.oomph.ui.ErrorDialog;
+import org.eclipse.oomph.util.OomphPlugin.Preference;
 import org.eclipse.oomph.util.PropertiesUtil;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -39,9 +40,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import org.osgi.service.prefs.BackingStoreException;
-import org.osgi.service.prefs.Preferences;
-
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,9 +49,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class InstallerApplication implements IApplication
 {
-  private static final String MODE_KEY = "mode";
-
   public static final Integer EXIT_ERROR = 1;
+
+  private static final Preference PREF_MODE = SetupInstallerPlugin.INSTANCE.getConfigurationPreference("mode");
 
   private Mode mode = Mode.SIMPLE;
 
@@ -152,8 +150,7 @@ public class InstallerApplication implements IApplication
         org.eclipse.equinox.internal.p2.repository.Activator.getContext(), IProvisioningAgent.SERVICE_NAME);
     agent.registerService(UIServices.SERVICE_NAME, SetupWizard.Installer.SERVICE_UI);
 
-    Preferences preferences = SetupInstallerPlugin.INSTANCE.getConfigurationPreferences();
-    String modeName = preferences.get(MODE_KEY, Mode.SIMPLE.name());
+    String modeName = PREF_MODE.get(Mode.SIMPLE.name());
     mode = Mode.valueOf(modeName);
 
     for (;;)
@@ -174,13 +171,13 @@ public class InstallerApplication implements IApplication
       final int retcode = installerDialog[0].show();
       if (retcode == InstallerUI.RETURN_SIMPLE)
       {
-        setMode(preferences, Mode.SIMPLE);
+        setMode(Mode.SIMPLE);
         continue;
       }
 
       if (retcode == InstallerUI.RETURN_ADVANCED)
       {
-        setMode(preferences, Mode.ADVANCED);
+        setMode(Mode.ADVANCED);
         continue;
       }
 
@@ -217,20 +214,10 @@ public class InstallerApplication implements IApplication
     }
   }
 
-  private void setMode(Preferences preferences, Mode mode)
+  private void setMode(Mode mode)
   {
     this.mode = mode;
-
-    try
-    {
-      String modeName = mode.name();
-      preferences.put(MODE_KEY, modeName);
-      preferences.flush();
-    }
-    catch (BackingStoreException ex)
-    {
-      SetupInstallerPlugin.INSTANCE.log(ex);
-    }
+    PREF_MODE.set(mode.name());
   }
 
   public Object start(IApplicationContext context) throws Exception
