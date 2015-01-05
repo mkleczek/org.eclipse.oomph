@@ -306,7 +306,7 @@ public final class SimpleInstallerDialog extends Shell implements InstallerUI
     getDisplay().post(event);
   }
 
-  public static void openSytemBrowser(String url)
+  public static void openSystemBrowser(String url)
   {
     try
     {

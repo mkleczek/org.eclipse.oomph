@@ -40,6 +40,7 @@ import org.eclipse.oomph.setup.ui.UnsignedContentDialog;
 import org.eclipse.oomph.setup.ui.wizards.ProductPage;
 import org.eclipse.oomph.setup.ui.wizards.ProgressPage;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizardPage;
+import org.eclipse.oomph.setup.util.OS;
 import org.eclipse.oomph.ui.StackComposite;
 import org.eclipse.oomph.ui.UIUtil;
 import org.eclipse.oomph.util.IOUtil;
@@ -101,6 +102,8 @@ public class SimpleVariablePage extends SimpleInstallerPage
   private static final String TEXT_README = "Show readme file";
 
   private static final String TEXT_LAUNCH = "Launch product";
+
+  private static final boolean JAVA = false;
 
   private final Map<String, ProductVersion> productVersions = new HashMap<String, ProductVersion>();
 
@@ -178,7 +181,7 @@ public class SimpleVariablePage extends SimpleInstallerPage
 
     // Row 1
     GridData browserLayoutData = new GridData(SWT.FILL, SWT.FILL, true, false, layout.numColumns, 1);
-    browserLayoutData.heightHint = 142;
+    browserLayoutData.heightHint = OS.INSTANCE.isLinux() ? 120 : 142;
 
     Composite browserComposite = new Composite(this, SWT.BORDER);
     browserComposite.setLayoutData(browserLayoutData);
@@ -193,17 +196,20 @@ public class SimpleVariablePage extends SimpleInstallerPage
         String url = event.location;
         if (!"about:blank".equals(url))
         {
-          SimpleInstallerDialog.openSytemBrowser(url);
+          SimpleInstallerDialog.openSystemBrowser(url);
           event.doit = false;
         }
       }
     });
 
     // Row 2
-    new Label(this, SWT.NONE);
-    new Label(this, SWT.NONE);
-    new Label(this, SWT.NONE);
-    new Label(this, SWT.NONE);
+    if (!OS.INSTANCE.isLinux())
+    {
+      new Label(this, SWT.NONE);
+      new Label(this, SWT.NONE);
+      new Label(this, SWT.NONE);
+      new Label(this, SWT.NONE);
+    }
 
     // Row 3
     createLabel("Product Version ");
@@ -225,51 +231,57 @@ public class SimpleVariablePage extends SimpleInstallerPage
       }
     });
 
-    new Label(versionComposite, SWT.NONE);
-
-    bitness32Button = new ToolButton(versionComposite, SWT.RADIO, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/32bit.png"), true);
-    bitness32Button.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
-    bitness32Button.setSelection(false);
-    bitness32Button.addSelectionListener(new SelectionAdapter()
+    if (JAVA)
     {
-      @Override
-      public void widgetSelected(SelectionEvent e)
-      {
-        bitness = 32;
-        bitness32Button.setSelection(true);
-        bitness64Button.setSelection(false);
-      }
-    });
+      new Label(versionComposite, SWT.NONE);
 
-    bitness64Button = new ToolButton(versionComposite, SWT.RADIO, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/64bit.png"), true);
-    bitness64Button.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
-    bitness64Button.setSelection(true);
-    bitness64Button.addSelectionListener(new SelectionAdapter()
-    {
-      @Override
-      public void widgetSelected(SelectionEvent e)
+      bitness32Button = new ToolButton(versionComposite, SWT.RADIO, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/32bit.png"), true);
+      bitness32Button.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+      bitness32Button.setSelection(false);
+      bitness32Button.addSelectionListener(new SelectionAdapter()
       {
-        bitness = 64;
-        bitness32Button.setSelection(false);
-        bitness64Button.setSelection(true);
-      }
-    });
+        @Override
+        public void widgetSelected(SelectionEvent e)
+        {
+          bitness = 32;
+          bitness32Button.setSelection(true);
+          bitness64Button.setSelection(false);
+        }
+      });
+
+      bitness64Button = new ToolButton(versionComposite, SWT.RADIO, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/64bit.png"), true);
+      bitness64Button.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+      bitness64Button.setSelection(true);
+      bitness64Button.addSelectionListener(new SelectionAdapter()
+      {
+        @Override
+        public void widgetSelected(SelectionEvent e)
+        {
+          bitness = 64;
+          bitness32Button.setSelection(false);
+          bitness64Button.setSelection(true);
+        }
+      });
+    }
 
     new Label(this, SWT.NONE);
     new Label(this, SWT.NONE);
 
     // Row 4
-    javaLabel = createLabel("Java VM ");
+    if (JAVA)
+    {
+      javaLabel = createLabel("Java VM ");
 
-    javaText = new Text(this, SWT.BORDER);
-    javaText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-    javaText.setFont(font);
+      javaText = new Text(this, SWT.BORDER);
+      javaText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+      javaText.setFont(font);
 
-    javaButton = new ToolButton(this, SWT.PUSH, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/folder.png"), false);
-    javaButton.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
-    javaButton.setToolTipText("Select Java VM...");
+      javaButton = new ToolButton(this, SWT.PUSH, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/folder.png"), false);
+      javaButton.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
+      javaButton.setToolTipText("Select Java VM...");
 
-    new Label(this, SWT.NONE);
+      new Label(this, SWT.NONE);
+    }
 
     // Row 5
     createLabel("Installation Folder ");
@@ -396,7 +408,7 @@ public class SimpleVariablePage extends SimpleInstallerPage
     // Row 7
     progressLabel = new Link(this, SWT.WRAP);
     progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1));
-    progressLabel.setFont(SetupInstallerPlugin.getFont(font, URI.createURI("font:///9/")));
+    progressLabel.setFont(SetupInstallerPlugin.getFont(font, URI.createURI("font:///9/bold")));
     progressLabel.addSelectionListener(new SelectionAdapter()
     {
       @Override
@@ -405,14 +417,14 @@ public class SimpleVariablePage extends SimpleInstallerPage
         if (TEXT_LOG.equals(e.text))
         {
           String url = new File(installFolder, "eclipse/configuration/org.eclipse.oomph.setup/setup.log").toURI().toString();
-          SimpleInstallerDialog.openSytemBrowser(url);
+          SimpleInstallerDialog.openSystemBrowser(url);
         }
         else if (TEXT_README.equals(e.text))
         {
           if (readmePath != null)
           {
             String url = new File(installFolder, "eclipse/" + readmePath).toURI().toString();
-            SimpleInstallerDialog.openSytemBrowser(url);
+            SimpleInstallerDialog.openSystemBrowser(url);
           }
         }
         else if (TEXT_LAUNCH.equals(e.text))
@@ -433,15 +445,18 @@ public class SimpleVariablePage extends SimpleInstallerPage
       selectedProductVersion = productVersion;
       ProductPage.saveProductVersionSelection(installer.getCatalogManager(), selectedProductVersion);
 
-      String label = "Java";
-      String requiredJavaVersion = selectedProductVersion.getRequiredJavaVersion();
-      if (!StringUtil.isEmpty(requiredJavaVersion))
+      if (JAVA)
       {
-        label += " " + requiredJavaVersion;
-      }
+        String label = "Java";
+        String requiredJavaVersion = selectedProductVersion.getRequiredJavaVersion();
+        if (!StringUtil.isEmpty(requiredJavaVersion))
+        {
+          label += " " + requiredJavaVersion;
+        }
 
-      label += " VM ";
-      javaLabel.setText(label);
+        label += " VM ";
+        javaLabel.setText(label);
+      }
     }
   }
 
@@ -524,12 +539,17 @@ public class SimpleVariablePage extends SimpleInstallerPage
   public void setEnabled(boolean enabled)
   {
     versionCombo.setEnabled(enabled);
-    bitness32Button.setEnabled(enabled);
-    bitness32Button.setVisible(enabled || bitness == 32);
-    bitness64Button.setEnabled(enabled);
-    bitness64Button.setVisible(enabled || bitness == 64);
-    javaText.setEnabled(enabled);
-    javaButton.setEnabled(enabled);
+
+    if (JAVA)
+    {
+      bitness32Button.setEnabled(enabled);
+      bitness32Button.setVisible(enabled || bitness == 32);
+      bitness64Button.setEnabled(enabled);
+      bitness64Button.setVisible(enabled || bitness == 64);
+      javaText.setEnabled(enabled);
+      javaButton.setEnabled(enabled);
+    }
+
     folderText.setEnabled(enabled);
     folderButton.setEnabled(enabled);
     poolButton.setEnabled(enabled);
