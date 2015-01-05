@@ -15,6 +15,7 @@ import org.eclipse.oomph.setup.Product;
 import org.eclipse.oomph.setup.internal.core.util.ECFURIHandlerImpl;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizard.Installer;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizardPage;
+import org.eclipse.oomph.setup.util.OS;
 import org.eclipse.oomph.ui.StackComposite;
 import org.eclipse.oomph.ui.UIUtil;
 
@@ -82,7 +83,7 @@ public final class SimpleInstallerDialog extends Shell implements InstallerUI
 
   public SimpleInstallerDialog(Display display, final Installer installer)
   {
-    super(display, SWT.BORDER);
+    super(display, OS.INSTANCE.isMac() ? SWT.TOOL : SWT.BORDER);
     this.installer = installer;
 
     if (CAPTURE)

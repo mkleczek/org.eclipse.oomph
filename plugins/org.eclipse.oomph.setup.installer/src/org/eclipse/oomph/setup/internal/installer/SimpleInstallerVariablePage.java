@@ -403,12 +403,14 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       {
         if (TEXT_LOG.equals(e.text))
         {
+          // TODO
           SimpleInstallerDialog.openSytemBrowser("file:/C:/develop/oomph/eclipse/configuration/org.eclipse.oomph.setup/setup.log");
         }
         else if (TEXT_README.equals(e.text))
         {
           if (readmePath != null)
           {
+            // TODO
             SimpleInstallerDialog.openSytemBrowser("file:/C:/develop/oomph/eclipse/" + readmePath);
           }
         }

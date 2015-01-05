@@ -222,7 +222,9 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
     builder.append(".col2{width:100%}");
     builder.append(".col3{text-align:center}");
     builder.append(".zebra{background-color:#fafafa}");
-    builder.append("a.dl{background-image:url('" + downloadImageURI + "'); background-repeat:no-repeat; background-position:left top}");
+    // builder
+    // .append("a.dl{width:57px; height:56px; background-image:url('" + downloadImageURI + "'); background-repeat:no-repeat; background-position:left top}");
+    builder.append("a.dl{background-image:url('" + downloadImageURI + "'); background-repeat:no-repeat; background-position:top left}");
     builder.append("a.dl:hover{background-image:url('" + downloadHoverImageURI + "')}");
     builder.append("a.dl:active{background-image:url('" + downloadActiveImageURI + "')}");
     builder.append("img.dl{border-style:none}");
@@ -327,10 +329,12 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
 
     if (downloadImageURI != null)
     {
+      // builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
+      // + "\" title=\"Select\"/></td>");
+
       builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
-          + "\" title=\"Select\"><img class=\"dl\" src=\"");
-      builder.append(transparentImageURI);
-      builder.append("\" width=\"57px\" height=\"56px\"/></a></td>");
+          + "\" title=\"Select\"><img class=\"dl\" src=\"" + transparentImageURI + "\"/></a></td>");
+      // builder.append("\" width=\"57px\" height=\"56px\"/></a></td>");
     }
 
     builder.append("</tr>\n");

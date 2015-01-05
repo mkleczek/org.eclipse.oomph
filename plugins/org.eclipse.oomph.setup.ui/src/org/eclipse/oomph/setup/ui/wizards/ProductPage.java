@@ -757,7 +757,7 @@ public class ProductPage extends SetupWizardPage
       bundleFile.export(iconFile);
     }
 
-    return "file:/" + iconFile.getAbsolutePath().replace('\\', '/');
+    return iconFile.toURI().toString();
   }
 
   /**
