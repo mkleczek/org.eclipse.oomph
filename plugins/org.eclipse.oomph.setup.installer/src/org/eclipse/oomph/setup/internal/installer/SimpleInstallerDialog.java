@@ -13,6 +13,7 @@ package org.eclipse.oomph.setup.internal.installer;
 import org.eclipse.oomph.internal.ui.AccessUtil;
 import org.eclipse.oomph.setup.Product;
 import org.eclipse.oomph.setup.internal.core.util.ECFURIHandlerImpl;
+import org.eclipse.oomph.setup.ui.AbstractSetupDialog;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizard.Installer;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizardPage;
 import org.eclipse.oomph.setup.util.OS;
@@ -21,6 +22,7 @@ import org.eclipse.oomph.ui.UIUtil;
 
 import org.eclipse.emf.common.util.URI;
 
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.MouseEvent;
@@ -96,6 +98,8 @@ public final class SimpleInstallerDialog extends Shell implements InstallerUI
 
     setLayout(verticalLayout);
     setSize(WIDTH, HEIGHT);
+    setImages(Window.getDefaultImages());
+    setText(AbstractSetupDialog.SHELL_TEXT);
 
     Rectangle bounds = display.getPrimaryMonitor().getBounds();
     setLocation(bounds.x + (bounds.width - WIDTH) / 2, bounds.y + (bounds.height - HEIGHT) / 2);

@@ -217,16 +217,16 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
     builder.append(".col2{width:100%}");
     builder.append(".col3{text-align:center}");
     builder.append(".zebra{background-color:#fafafa}");
-    if (OS.INSTANCE.isMac())
-    {
-      builder.append("img.dl{border-style:none}");
-    }
-    else
+    if (OS.INSTANCE.isWin())
     {
       builder.append("a.dl{background-image:url('" + downloadImageURI
           + "'); background-repeat:no-repeat; background-position:top left; width:57px; height:56px}");
       builder.append("a.dl:hover{background-image:url('" + downloadHoverImageURI + "')}");
       builder.append("a.dl:active{background-image:url('" + downloadActiveImageURI + "')}");
+    }
+    else
+    {
+      builder.append("img.dl{border-style:none}");
     }
 
     builder.append(" --></style><body style=\"margin:0px; overflow:auto; font-family:'Open Sans','Helvetica Neue',Helvetica,Arial,sans-serif\"><table>\n");
@@ -330,15 +330,15 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
 
     if (downloadImageURI != null)
     {
-      if (OS.INSTANCE.isMac())
+      if (OS.INSTANCE.isWin())
       {
         builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
-            + "\" title=\"Select\"><img class=\"dl\" src=\"" + downloadImageURI + "\"/></a></td>");
+            + "\" title=\"Select\"/></td>");
       }
       else
       {
         builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
-            + "\" title=\"Select\"/></td>");
+            + "\" title=\"Select\"><img class=\"dl\" src=\"" + downloadImageURI + "\"/></a></td>");
       }
     }
 
