@@ -53,7 +53,6 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.URIConverter;
-import org.eclipse.emf.ecore.util.EcoreUtil;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.equinox.p2.metadata.ILicense;
@@ -84,6 +83,7 @@ import org.eclipse.swt.widgets.Text;
 import java.io.File;
 import java.security.cert.Certificate;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -296,9 +296,9 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
         dialog.setText(AbstractSetupDialog.SHELL_TEXT);
         dialog.setMessage("Select installation folder...");
 
-        if (!StringUtil.isEmpty(installFolder))
+        if (!StringUtil.isEmpty(installContainer))
         {
-          dialog.setFilterPath(installFolder);
+          dialog.setFilterPath(installContainer);
         }
 
         String dir = dialog.open();
@@ -666,36 +666,6 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
 
   private void install()
   {
-    // The resulting image does not display in the ToolItem on Mac ;-(
-    // final Image[] productImage = { null };
-    // final Thread imageLoader = new Thread()
-    // {
-    // @Override
-    // public void run()
-    // {
-    // InputStream stream = null;
-    //
-    // try
-    // {
-    // String imageURI = ProductPage.getProductImageURI(product);
-    // stream = new URL(imageURI).openStream();
-    //
-    // productImage[0] = new Image(getDisplay(), stream);
-    // }
-    // catch (Exception ex)
-    // {
-    // //$FALL-THROUGH$
-    // }
-    // finally
-    // {
-    // IOUtil.closeSilent(stream);
-    // }
-    // }
-    // };
-    //
-    // imageLoader.setDaemon(true);
-    // imageLoader.start();
-
     installThread = new Thread()
     {
       @Override
@@ -720,29 +690,35 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
           URIConverter uriConverter = resourceSet.getURIConverter();
 
           SetupContext setupContext = SetupContext.create(resourceSet, selectedProductVersion);
+          Installation installation = setupContext.getInstallation();
           User user = setupContext.getUser();
 
-          AttributeRule oldRule = setInstallationLocationRule(user);
+          UserAdjuster userAdjuster = new UserAdjuster();
+          userAdjuster.adjust(user, installFolder);
           PREF_INSTALL_CONTAINER.set(installContainer);
 
           SimplePrompter prompter = new SimplePrompter();
-          // prompter.put(INSTALL_LOCATION_VARIABLE, installFolder);
-          // prompter.put("installation.id", new File(installFolder).getName());
 
           performer = SetupTaskPerformer.create(uriConverter, prompter, Trigger.BOOTSTRAP, setupContext, false);
           performer.getUnresolvedVariables().clear();
+          performer.setProgress(progress);
+          performer.put(ILicense.class, ProgressPage.LICENSE_CONFIRMER);
+          performer.put(Certificate.class, UnsignedContentDialog.createUnsignedContentConfirmer(performer.getUser(), false));
 
           progress.beginTask("Installing", performer.initNeededSetupTasks().size() + 1);
 
-          performer.setProgress(progress);
-          performer.put(ILicense.class, ProgressPage.LICENSE_CONFIRMER); // TODO Not saved
-          performer.put(Certificate.class, UnsignedContentDialog.createUnsignedContentConfirmer(performer.getUser(), false)); // TODO Not saved
           performer.perform();
+          performer.recordVariables(installation, null, user);
+          performer.savePasswords();
 
           progress.task(null);
 
-          Installation installation = setupContext.getInstallation();
-          BaseUtil.saveEObject(installation); // TODO Not saved
+          installation.eResource().setURI(
+              URI.createFileURI(new File(performer.getProductConfigurationLocation(), "org.eclipse.oomph.setup/installation.setup").toString()));
+          BaseUtil.saveEObject(installation);
+
+          userAdjuster.undo();
+          BaseUtil.saveEObject(user);
         }
         catch (Exception ex)
         {
@@ -755,6 +731,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
             IOUtil.close(performer.getLogStream());
           }
 
+          int xxx;
           // final boolean canceled = monitor.isCanceled();
           // if (!canceled)
           // {
@@ -778,21 +755,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
                 }
                 else
                 {
-                  Image image = null;
-                  // try
-                  // {
-                  // imageLoader.join(5000);
-                  // if (productImage[0] != null)
-                  // {
-                  // image = productImage[0];
-                  // }
-                  // }
-                  // catch (Exception ex)
-                  // {
-                  // //$FALL-THROUGH$
-                  // }
-
-                  installFinished(image);
+                  installFinished();
                 }
               }
               catch (SWTException ex)
@@ -803,33 +766,62 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
           });
         }
       }
-
-      private AttributeRule setInstallationLocationRule(User user)
-      {
-        URI attributeURI = SetupTaskPerformer.getAttributeURI(SetupPackage.Literals.INSTALLATION_TASK__LOCATION);
-
-        EList<AttributeRule> attributeRules = user.getAttributeRules();
-        for (AttributeRule attributeRule : attributeRules)
-        {
-          if (attributeURI.equals(attributeRule.getAttributeURI()))
-          {
-            AttributeRule oldRule = EcoreUtil.copy(attributeRule);
-            attributeRule.setValue(installFolder);
-            return oldRule;
-          }
-        }
-
-        AttributeRule attributeRule = SetupFactory.eINSTANCE.createAttributeRule();
-        attributeRule.setAttributeURI(attributeURI);
-        attributeRule.setValue(installFolder);
-
-        attributeRules.add(attributeRule);
-        return null;
-      }
     };
 
     installThread.setDaemon(true);
     installThread.start();
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  private static class UserAdjuster
+  {
+    private static final URI INSTALLATION_LOCATION_ATTRIBUTE_URI = SetupTaskPerformer.getAttributeURI(SetupPackage.Literals.INSTALLATION_TASK__LOCATION);
+
+    private EList<AttributeRule> attributeRules;
+
+    private String oldValue;
+
+    private void adjust(User user, String installFolder)
+    {
+      attributeRules = user.getAttributeRules();
+      for (AttributeRule attributeRule : attributeRules)
+      {
+        if (INSTALLATION_LOCATION_ATTRIBUTE_URI.equals(attributeRule.getAttributeURI()))
+        {
+          oldValue = attributeRule.getValue();
+          attributeRule.setValue(installFolder);
+          return;
+        }
+      }
+
+      AttributeRule attributeRule = SetupFactory.eINSTANCE.createAttributeRule();
+      attributeRule.setAttributeURI(INSTALLATION_LOCATION_ATTRIBUTE_URI);
+      attributeRule.setValue(installFolder);
+      attributeRules.add(attributeRule);
+    }
+
+    public void undo()
+    {
+      for (Iterator<AttributeRule> it = attributeRules.iterator(); it.hasNext();)
+      {
+        AttributeRule attributeRule = it.next();
+        if (INSTALLATION_LOCATION_ATTRIBUTE_URI.equals(attributeRule.getAttributeURI()))
+        {
+          if (oldValue == null)
+          {
+            it.remove();
+          }
+          else
+          {
+            attributeRule.setValue(oldValue);
+          }
+
+          return;
+        }
+      }
+    }
   }
 
   private void installCancel()
@@ -842,7 +834,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     installStack.setTopControl(installButton);
   }
 
-  private void installFinished(Image productImage)
+  private void installFinished()
   {
     installed = true;
     installButton.setImage(SetupInstallerPlugin.INSTANCE.getSWTImage("simple/launch.png"));

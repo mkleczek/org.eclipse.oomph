@@ -74,8 +74,6 @@ public final class InstallerDialog extends SetupWizardDialog implements Installe
 
   private Link versionLink;
 
-  private Link simpleLink;
-
   public InstallerDialog(Shell parentShell, boolean restarted)
   {
     this(parentShell, new SetupWizard.Installer(), restarted);
@@ -147,6 +145,18 @@ public final class InstallerDialog extends SetupWizardDialog implements Installe
       }
     });
     AccessUtil.setKey(sshSettingsToolItem, "ssh");
+
+    ToolItem simpleToolItem = createToolItem(toolBar, "simple", "Switch to simple mode");
+    simpleToolItem.addSelectionListener(new SelectionAdapter()
+    {
+      @Override
+      public void widgetSelected(SelectionEvent e)
+      {
+        close();
+        setReturnCode(RETURN_SIMPLE);
+      }
+    });
+    AccessUtil.setKey(simpleToolItem, "simple");
 
     updateToolItem = createToolItem(toolBar, "install_update0", "Update");
     updateToolItem.setDisabledImage(SetupInstallerPlugin.INSTANCE.getSWTImage("install_searching0"));
@@ -292,30 +302,6 @@ public final class InstallerDialog extends SetupWizardDialog implements Installe
         }
       }
     });
-  }
-
-  @Override
-  protected void createButtonsForButtonBar(Composite parent)
-  {
-    GridLayout parentLayout = (GridLayout)parent.getLayout();
-    parentLayout.numColumns++;
-
-    simpleLink = new Link(parent, SWT.NO_FOCUS);
-    simpleLink.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false));
-    simpleLink.setText("<a>Simple</a>");
-    simpleLink.setToolTipText("Switch to simple mode");
-    simpleLink.addSelectionListener(new SelectionAdapter()
-    {
-      @Override
-      public void widgetSelected(SelectionEvent e)
-      {
-        close();
-        setReturnCode(RETURN_SIMPLE);
-      }
-    });
-
-    AccessUtil.setKey(simpleLink, "simple");
-    super.createButtonsForButtonBar(parent);
   }
 
   private void setProductVersionLink(Composite parent)

@@ -134,14 +134,14 @@ public final class SimpleInstallerDialog extends Shell implements InstallerUI
     ToolBar toolBar = new ToolBar(titleComposite, SWT.FLAT | SWT.RIGHT);
     toolBar.setLayoutData(new GridData(GridData.END, GridData.CENTER, true, false));
 
-    ToolItem helpButton = new SecondaryToolItem(toolBar, SWT.NONE, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/help.png"));
-    helpButton.setToolTipText("Help");
-
-    ToolItem updateButton = new SecondaryToolItem(toolBar, SWT.NONE, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/update.png"));
-    updateButton.setToolTipText("Update");
+    // ToolItem helpButton = new SecondaryToolItem(toolBar, SWT.NONE, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/help.png"));
+    // helpButton.setToolTipText("Help");
+    //
+    // ToolItem updateButton = new SecondaryToolItem(toolBar, SWT.NONE, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/update.png"));
+    // updateButton.setToolTipText("Update");
 
     ToolItem advancedButton = new SecondaryToolItem(toolBar, SWT.NONE, SetupInstallerPlugin.INSTANCE.getSWTImage("simple/advanced.png"));
-    advancedButton.setToolTipText("Advanced");
+    advancedButton.setToolTipText("Switch to advanced mode");
     advancedButton.addSelectionListener(new SelectionAdapter()
     {
       @Override
@@ -162,9 +162,6 @@ public final class SimpleInstallerDialog extends Shell implements InstallerUI
         exitSelected();
       }
     });
-
-    // Label separator = new Label(this, SWT.SEPARATOR | SWT.HORIZONTAL);
-    // separator.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
 
     stackLayout = new StackLayout();
 
