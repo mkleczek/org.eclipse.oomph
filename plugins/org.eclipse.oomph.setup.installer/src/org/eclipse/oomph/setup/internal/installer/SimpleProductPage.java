@@ -51,7 +51,7 @@ import java.net.URI;
 /**
  * @author Eike Stepper
  */
-public class SimpleInstallerProductPage extends SimpleInstallerPage implements FilterHandler
+public class SimpleProductPage extends SimpleInstallerPage implements FilterHandler
 {
   private static final String PRODUCT_PREFIX = "product://";
 
@@ -69,7 +69,7 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
 
   private Browser browser;
 
-  public SimpleInstallerProductPage(final Composite parent, int style, final SimpleInstallerDialog dialog)
+  public SimpleProductPage(final Composite parent, int style, final SimpleInstallerDialog dialog)
   {
     super(parent, style, dialog);
 
@@ -87,7 +87,7 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
     GridData searchFieldData = new GridData(SWT.LEFT, SWT.CENTER, false, false);
     searchFieldData.widthHint = 350;
 
-    searchField = new SearchField(searchComposite, SimpleInstallerProductPage.this)
+    searchField = new SearchField(searchComposite, SimpleProductPage.this)
     {
       @Override
       protected void finishFilter()

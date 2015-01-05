@@ -90,7 +90,7 @@ import java.util.Map;
 /**
  * @author Eike Stepper
  */
-public class SimpleInstallerVariablePage extends SimpleInstallerPage
+public class SimpleVariablePage extends SimpleInstallerPage
 {
   private static final Preference PREF_INSTALL_CONTAINER = SetupInstallerPlugin.INSTANCE.getConfigurationPreference("installContainer");
 
@@ -162,7 +162,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
 
   private ToolButton backButton;
 
-  public SimpleInstallerVariablePage(final Composite parent, int style, final SimpleInstallerDialog dialog)
+  public SimpleVariablePage(final Composite parent, int style, final SimpleInstallerDialog dialog)
   {
     super(parent, style, dialog);
 
@@ -396,7 +396,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     // Row 7
     progressLabel = new Link(this, SWT.WRAP);
     progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1));
-    progressLabel.setFont(SetupInstallerPlugin.getFont(font, URI.createURI("font:///9/bold")));
+    progressLabel.setFont(SetupInstallerPlugin.getFont(font, URI.createURI("font:///9/")));
     progressLabel.addSelectionListener(new SelectionAdapter()
     {
       @Override
@@ -464,8 +464,8 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     builder
         .append(" --></style><body style=\"background-color:#fafafa; overflow:auto; margin:10px; font-family:'Open Sans','Helvetica Neue',Helvetica,Arial,sans-serif\"><table>\n");
 
-    SimpleInstallerProductPage.renderProduct(builder, product, true, null);
-    browser.setText(SimpleInstallerProductPage.getHtml(builder), true);
+    SimpleProductPage.renderProduct(builder, product, true, null);
+    browser.setText(SimpleProductPage.getHtml(builder), true);
 
     productVersions.clear();
     versionCombo.removeAll();

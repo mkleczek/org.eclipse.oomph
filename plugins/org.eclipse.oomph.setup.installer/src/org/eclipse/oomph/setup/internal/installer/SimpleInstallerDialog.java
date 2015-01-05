@@ -77,9 +77,9 @@ public final class SimpleInstallerDialog extends Shell implements InstallerUI
 
   private StackLayout stackLayout;
 
-  private SimpleInstallerProductPage productPage;
+  private SimpleProductPage productPage;
 
-  private SimpleInstallerVariablePage variablePage;
+  private SimpleVariablePage variablePage;
 
   private int returnCode = RETURN_OK;
 
@@ -173,8 +173,8 @@ public final class SimpleInstallerDialog extends Shell implements InstallerUI
     stack.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true));
     stack.setLayout(stackLayout);
 
-    productPage = new SimpleInstallerProductPage(stack, SWT.NONE, this);
-    variablePage = new SimpleInstallerVariablePage(stack, SWT.NONE, this);
+    productPage = new SimpleProductPage(stack, SWT.NONE, this);
+    variablePage = new SimpleVariablePage(stack, SWT.NONE, this);
 
     stackLayout.topControl = productPage;
     productPage.setFocus();
