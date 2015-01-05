@@ -152,6 +152,8 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
 
   private SetupTaskPerformer performer;
 
+  private SimpleProgress progress;
+
   private ProgressBar progressBar;
 
   private Link progressLabel;
@@ -672,7 +674,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       public void run()
       {
         performer = null;
-        final SimpleProgress progress = new SimpleProgress();
+        progress = new SimpleProgress();
 
         try
         {
@@ -731,13 +733,6 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
             IOUtil.close(performer.getLogStream());
           }
 
-          int xxx;
-          // final boolean canceled = monitor.isCanceled();
-          // if (!canceled)
-          // {
-          // monitor.done();
-          // }
-
           UIUtil.syncExec(new Runnable()
           {
             public void run()
@@ -772,60 +767,13 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     installThread.start();
   }
 
-  /**
-   * @author Eike Stepper
-   */
-  private static class UserAdjuster
-  {
-    private static final URI INSTALLATION_LOCATION_ATTRIBUTE_URI = SetupTaskPerformer.getAttributeURI(SetupPackage.Literals.INSTALLATION_TASK__LOCATION);
-
-    private EList<AttributeRule> attributeRules;
-
-    private String oldValue;
-
-    private void adjust(User user, String installFolder)
-    {
-      attributeRules = user.getAttributeRules();
-      for (AttributeRule attributeRule : attributeRules)
-      {
-        if (INSTALLATION_LOCATION_ATTRIBUTE_URI.equals(attributeRule.getAttributeURI()))
-        {
-          oldValue = attributeRule.getValue();
-          attributeRule.setValue(installFolder);
-          return;
-        }
-      }
-
-      AttributeRule attributeRule = SetupFactory.eINSTANCE.createAttributeRule();
-      attributeRule.setAttributeURI(INSTALLATION_LOCATION_ATTRIBUTE_URI);
-      attributeRule.setValue(installFolder);
-      attributeRules.add(attributeRule);
-    }
-
-    public void undo()
-    {
-      for (Iterator<AttributeRule> it = attributeRules.iterator(); it.hasNext();)
-      {
-        AttributeRule attributeRule = it.next();
-        if (INSTALLATION_LOCATION_ATTRIBUTE_URI.equals(attributeRule.getAttributeURI()))
-        {
-          if (oldValue == null)
-          {
-            it.remove();
-          }
-          else
-          {
-            attributeRule.setValue(oldValue);
-          }
-
-          return;
-        }
-      }
-    }
-  }
-
   private void installCancel()
   {
+    if (progress != null)
+    {
+      progress.setCanceled(true);
+    }
+
     if (installThread != null)
     {
       installThread.interrupt();
@@ -900,6 +848,58 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     catch (Exception ex)
     {
       //$FALL-THROUGH$
+    }
+  }
+
+  /**
+   * @author Eike Stepper
+   */
+  private static class UserAdjuster
+  {
+    private static final URI INSTALLATION_LOCATION_ATTRIBUTE_URI = SetupTaskPerformer.getAttributeURI(SetupPackage.Literals.INSTALLATION_TASK__LOCATION);
+
+    private EList<AttributeRule> attributeRules;
+
+    private String oldValue;
+
+    private void adjust(User user, String installFolder)
+    {
+      attributeRules = user.getAttributeRules();
+      for (AttributeRule attributeRule : attributeRules)
+      {
+        if (INSTALLATION_LOCATION_ATTRIBUTE_URI.equals(attributeRule.getAttributeURI()))
+        {
+          oldValue = attributeRule.getValue();
+          attributeRule.setValue(installFolder);
+          return;
+        }
+      }
+
+      AttributeRule attributeRule = SetupFactory.eINSTANCE.createAttributeRule();
+      attributeRule.setAttributeURI(INSTALLATION_LOCATION_ATTRIBUTE_URI);
+      attributeRule.setValue(installFolder);
+      attributeRules.add(attributeRule);
+    }
+
+    public void undo()
+    {
+      for (Iterator<AttributeRule> it = attributeRules.iterator(); it.hasNext();)
+      {
+        AttributeRule attributeRule = it.next();
+        if (INSTALLATION_LOCATION_ATTRIBUTE_URI.equals(attributeRule.getAttributeURI()))
+        {
+          if (oldValue == null)
+          {
+            it.remove();
+          }
+          else
+          {
+            attributeRule.setValue(oldValue);
+          }
+
+          return;
+        }
+      }
     }
   }
 
