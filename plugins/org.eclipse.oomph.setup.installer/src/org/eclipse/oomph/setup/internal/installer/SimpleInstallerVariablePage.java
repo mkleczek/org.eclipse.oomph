@@ -82,8 +82,6 @@ import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Text;
 
 import java.io.File;
-import java.io.InputStream;
-import java.net.URL;
 import java.security.cert.Certificate;
 import java.util.HashMap;
 import java.util.List;
@@ -379,6 +377,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
         {
           setEnabled(false);
 
+          installButton.setImage(SetupInstallerPlugin.INSTANCE.getSWTImage("simple/download_small.png"));
           progressBar.setSelection(0);
           progressLabel.setForeground(null);
           cancelButton.setVisible(true);
@@ -403,15 +402,15 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       {
         if (TEXT_LOG.equals(e.text))
         {
-          // TODO
-          SimpleInstallerDialog.openSytemBrowser("file:/C:/develop/oomph/eclipse/configuration/org.eclipse.oomph.setup/setup.log");
+          String url = new File(installFolder, "eclipse/configuration/org.eclipse.oomph.setup/setup.log").toURI().toString();
+          SimpleInstallerDialog.openSytemBrowser(url);
         }
         else if (TEXT_README.equals(e.text))
         {
           if (readmePath != null)
           {
-            // TODO
-            SimpleInstallerDialog.openSytemBrowser("file:/C:/develop/oomph/eclipse/" + readmePath);
+            String url = new File(installFolder, "eclipse/" + readmePath).toURI().toString();
+            SimpleInstallerDialog.openSytemBrowser(url);
           }
         }
         else if (TEXT_LAUNCH.equals(e.text))
@@ -549,10 +548,10 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
       installContainer = PREF_INSTALL_CONTAINER.get(PropertiesUtil.USER_HOME);
     }
 
-    for (int i = 0; i < 1000; i++)
+    for (int i = 1; i < 1000; i++)
     {
       String filename = name;
-      if (i != 0)
+      if (i != 1)
       {
         filename += i;
       }
@@ -667,36 +666,35 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
 
   private void install()
   {
-    installButton.setImage(SetupInstallerPlugin.INSTANCE.getSWTImage("simple/download_small.png"));
-
-    final Image[] productImage = { null };
-    final Thread imageLoader = new Thread()
-    {
-      @Override
-      public void run()
-      {
-        InputStream stream = null;
-
-        try
-        {
-          String imageURI = ProductPage.getProductImageURI(product);
-          stream = new URL(imageURI).openStream();
-
-          productImage[0] = new Image(getDisplay(), stream);
-        }
-        catch (Exception ex)
-        {
-          //$FALL-THROUGH$
-        }
-        finally
-        {
-          IOUtil.closeSilent(stream);
-        }
-      }
-    };
-
-    imageLoader.setDaemon(true);
-    imageLoader.start();
+    // The resulting image does not display in the ToolItem on Mac ;-(
+    // final Image[] productImage = { null };
+    // final Thread imageLoader = new Thread()
+    // {
+    // @Override
+    // public void run()
+    // {
+    // InputStream stream = null;
+    //
+    // try
+    // {
+    // String imageURI = ProductPage.getProductImageURI(product);
+    // stream = new URL(imageURI).openStream();
+    //
+    // productImage[0] = new Image(getDisplay(), stream);
+    // }
+    // catch (Exception ex)
+    // {
+    // //$FALL-THROUGH$
+    // }
+    // finally
+    // {
+    // IOUtil.closeSilent(stream);
+    // }
+    // }
+    // };
+    //
+    // imageLoader.setDaemon(true);
+    // imageLoader.start();
 
     installThread = new Thread()
     {
@@ -781,18 +779,18 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
                 else
                 {
                   Image image = null;
-                  try
-                  {
-                    imageLoader.join(5000);
-                    if (productImage[0] != null)
-                    {
-                      image = productImage[0];
-                    }
-                  }
-                  catch (Exception ex)
-                  {
-                    //$FALL-THROUGH$
-                  }
+                  // try
+                  // {
+                  // imageLoader.join(5000);
+                  // if (productImage[0] != null)
+                  // {
+                  // image = productImage[0];
+                  // }
+                  // }
+                  // catch (Exception ex)
+                  // {
+                  // //$FALL-THROUGH$
+                  // }
 
                   installFinished(image);
                 }
@@ -847,7 +845,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
   private void installFinished(Image productImage)
   {
     installed = true;
-    installButton.setImage(productImage);
+    installButton.setImage(SetupInstallerPlugin.INSTANCE.getSWTImage("simple/launch.png"));
     installButton.setToolTipText("Launch");
 
     String message = "Installation finished successfully\n\n<a>" + TEXT_LOG + "</a>\n";
@@ -886,8 +884,7 @@ public class SimpleInstallerVariablePage extends SimpleInstallerPage
     }
     catch (Exception ex)
     {
-      ex.printStackTrace();
-      int xxx;
+      SetupInstallerPlugin.INSTANCE.log(ex);
     }
 
     dialog.exitSelected();

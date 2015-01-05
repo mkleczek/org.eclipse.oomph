@@ -55,12 +55,6 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
 {
   private static final String PRODUCT_PREFIX = "product://";
 
-  // private static final String HOVER_COLOR_HEX = hex(HOVER_RGB);
-  //
-  // private static final String ACTIVE_COLOR_HEX = hex(ACTIVE_RGB);
-
-  private static final String transparentImageURI = ProductPage.getImageURI(SetupInstallerPlugin.INSTANCE, "simple/transparent.png");
-
   private static final String downloadImageURI = ProductPage.getImageURI(SetupInstallerPlugin.INSTANCE, "simple/download.png");
 
   private static final String downloadHoverImageURI = ProductPage.getImageURI(SetupInstallerPlugin.INSTANCE, "simple/download_hover.png");
@@ -334,15 +328,18 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
       builder.append("</p></td>");
     }
 
-    if (OS.INSTANCE.isMac())
+    if (downloadImageURI != null)
     {
-      builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
-          + "\" title=\"Select\"><img class=\"dl\" src=\"" + downloadImageURI + "\"/></a></td>");
-    }
-    else
-    {
-      builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
-          + "\" title=\"Select\"/></td>");
+      if (OS.INSTANCE.isMac())
+      {
+        builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
+            + "\" title=\"Select\"><img class=\"dl\" src=\"" + downloadImageURI + "\"/></a></td>");
+      }
+      else
+      {
+        builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
+            + "\" title=\"Select\"/></td>");
+      }
     }
 
     builder.append("</tr>\n");
