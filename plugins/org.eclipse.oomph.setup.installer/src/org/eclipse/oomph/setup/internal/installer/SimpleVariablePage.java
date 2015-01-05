@@ -723,9 +723,9 @@ public class SimpleVariablePage extends SimpleInstallerPage
 
           performer = SetupTaskPerformer.create(uriConverter, prompter, Trigger.BOOTSTRAP, setupContext, false);
           performer.getUnresolvedVariables().clear();
-          performer.setProgress(progress);
           performer.put(ILicense.class, ProgressPage.LICENSE_CONFIRMER);
           performer.put(Certificate.class, UnsignedContentDialog.createUnsignedContentConfirmer(performer.getUser(), false));
+          performer.setProgress(progress);
 
           progress.beginTask("Installing", performer.initNeededSetupTasks().size() + 1);
 
