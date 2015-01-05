@@ -19,6 +19,7 @@ import org.eclipse.oomph.setup.ui.wizards.CatalogSelector;
 import org.eclipse.oomph.setup.ui.wizards.ProductPage;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizard.IndexLoader;
 import org.eclipse.oomph.setup.ui.wizards.SetupWizardPage;
+import org.eclipse.oomph.setup.util.OS;
 import org.eclipse.oomph.ui.SearchField;
 import org.eclipse.oomph.ui.SearchField.FilterHandler;
 import org.eclipse.oomph.ui.SpriteAnimator;
@@ -222,12 +223,18 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
     builder.append(".col2{width:100%}");
     builder.append(".col3{text-align:center}");
     builder.append(".zebra{background-color:#fafafa}");
-    // builder
-    // .append("a.dl{width:57px; height:56px; background-image:url('" + downloadImageURI + "'); background-repeat:no-repeat; background-position:left top}");
-    builder.append("a.dl{background-image:url('" + downloadImageURI + "'); background-repeat:no-repeat; background-position:top left}");
-    builder.append("a.dl:hover{background-image:url('" + downloadHoverImageURI + "')}");
-    builder.append("a.dl:active{background-image:url('" + downloadActiveImageURI + "')}");
-    builder.append("img.dl{border-style:none}");
+    if (OS.INSTANCE.isMac())
+    {
+      builder.append("img.dl{border-style:none}");
+    }
+    else
+    {
+      builder.append("a.dl{background-image:url('" + downloadImageURI
+          + "'); background-repeat:no-repeat; background-position:top left; width:57px; height:56px}");
+      builder.append("a.dl:hover{background-image:url('" + downloadHoverImageURI + "')}");
+      builder.append("a.dl:active{background-image:url('" + downloadActiveImageURI + "')}");
+    }
+
     builder.append(" --></style><body style=\"margin:0px; overflow:auto; font-family:'Open Sans','Helvetica Neue',Helvetica,Arial,sans-serif\"><table>\n");
 
     boolean zebra = true;
@@ -327,14 +334,15 @@ public class SimpleInstallerProductPage extends SimpleInstallerPage implements F
       builder.append("</p></td>");
     }
 
-    if (downloadImageURI != null)
+    if (OS.INSTANCE.isMac())
     {
-      // builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
-      // + "\" title=\"Select\"/></td>");
-
       builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
-          + "\" title=\"Select\"><img class=\"dl\" src=\"" + transparentImageURI + "\"/></a></td>");
-      // builder.append("\" width=\"57px\" height=\"56px\"/></a></td>");
+          + "\" title=\"Select\"><img class=\"dl\" src=\"" + downloadImageURI + "\"/></a></td>");
+    }
+    else
+    {
+      builder.append("<td class=\"col col3\"><a class=\"dl\" href=\"product://" + product.getProductCatalog().getName() + "/" + product.getName()
+          + "\" title=\"Select\"/></td>");
     }
 
     builder.append("</tr>\n");
