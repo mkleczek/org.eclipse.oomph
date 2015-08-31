@@ -74,12 +74,12 @@ public abstract class OS
 
   public boolean isCurrent()
   {
-    return Platform.getOS().equals(osgiOS) && Platform.getWS().equals(osgiWS) && Platform.getOSArch().equals(osgiArch);
+    return getOSString().equals(osgiOS) && getWSString().equals(osgiWS) && getArchString().equals(osgiArch);
   }
 
   public boolean isCurrentOS()
   {
-    return Platform.getOS().equals(osgiOS);
+    return getOSString().equals(osgiOS);
   }
 
   public boolean is32BitAvailable()
@@ -199,9 +199,9 @@ public abstract class OS
 
   private static OS create()
   {
-    String os = Platform.getOS();
-    String ws = Platform.getWS();
-    String arch = Platform.getOSArch();
+    String os = getOSString();
+    String ws = getWSString();
+    String arch = getArchString();
 
     if (Platform.OS_WIN32.equals(os))
     {
@@ -224,6 +224,72 @@ public abstract class OS
     }
 
     throw new IllegalStateException("Operating system not supported: " + os);
+  }
+
+  private static String getOSString()
+  {
+    if (CommonPlugin.IS_ECLIPSE_RUNNING)
+    {
+      return Platform.getOS();
+    }
+
+    String name = PropertiesUtil.getProperty("os.name", "unknown").toLowerCase();
+    if (name.contains("windows"))
+    {
+      return Platform.OS_WIN32;
+    }
+
+    if (name.contains("linux"))
+    {
+      return Platform.OS_LINUX;
+    }
+
+    if (name.contains("mac"))
+    {
+      return Platform.OS_MACOSX;
+    }
+
+    return name;
+  }
+
+  private static String getWSString()
+  {
+    if (CommonPlugin.IS_ECLIPSE_RUNNING)
+    {
+      return Platform.getWS();
+    }
+
+    return null;
+  }
+
+  private static String getArchString()
+  {
+    if (CommonPlugin.IS_ECLIPSE_RUNNING)
+    {
+      return Platform.getOSArch();
+    }
+
+    if (determineBitness() == 64)
+    {
+      return Platform.ARCH_X86_64;
+    }
+
+    return Platform.ARCH_X86;
+  }
+
+  private static int determineBitness()
+  {
+    if ("64".equals(System.getProperty("sun.arch.data.model")))
+    {
+      return 64;
+    }
+
+    if (System.getProperty("os.arch").endsWith("64")) // Don't use contains() because of ARCH_IA64_32!
+    {
+      return 64;
+    }
+
+    return 32;
   }
 
   /**
