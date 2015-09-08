@@ -17,7 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
@@ -137,12 +137,12 @@ public final class TargetPlatformUtil
 
     try
     {
-      targetDefinition.resolve(new SubProgressMonitor(monitor, 50));
+      targetDefinition.resolve(SubMonitor.convert(monitor, 50));
 
       LoadTargetDefinitionJob job = new LoadTargetDefinitionJob(targetDefinition);
 
       @SuppressWarnings("restriction")
-      IStatus status = job.run(new SubProgressMonitor(monitor, 50));
+      IStatus status = job.run(SubMonitor.convert(monitor, 50));
       if (status.getSeverity() == IStatus.ERROR)
       {
         throw new CoreException(status);

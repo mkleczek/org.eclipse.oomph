@@ -47,7 +47,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
-import org.eclipse.core.runtime.SubProgressMonitor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -264,7 +263,7 @@ public class ProjectsImportTaskImpl extends SetupTaskImpl implements ProjectsImp
         try
         {
           ProjectHandler.Collector collector = new ProjectHandler.Collector();
-          sourceLocator.handleProjects(EclipseProjectFactory.LIST, collector, childStatus, new SubProgressMonitor(monitor, 1));
+          sourceLocator.handleProjects(EclipseProjectFactory.LIST, collector, childStatus, SubMonitor.convert(monitor, 1));
           if (childStatus.getSeverity() >= IStatus.ERROR)
           {
             status.add(childStatus);
@@ -292,7 +291,7 @@ public class ProjectsImportTaskImpl extends SetupTaskImpl implements ProjectsImp
         }
       }
 
-      importProjects(backendContainers, new SubProgressMonitor(monitor, size));
+      importProjects(backendContainers, SubMonitor.convert(monitor, size));
     }
     finally
     {

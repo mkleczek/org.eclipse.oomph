@@ -16,7 +16,7 @@ import org.eclipse.oomph.gitbash.Activator;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.jgit.api.Git;
@@ -49,10 +49,10 @@ public class PushDirectAction extends AbstractAction<Repository>
           Git git = Git.wrap(repository);
           monitor.worked(1);
 
-          git.push().setRemote("direct").setProgressMonitor(new EclipseGitProgressTransformer(new SubProgressMonitor(monitor, 50))).call();
+          git.push().setRemote("direct").setProgressMonitor(new EclipseGitProgressTransformer(SubMonitor.convert(monitor, 50))).call();
 
           monitor.setTaskName("Pulling");
-          git.pull().setProgressMonitor(new EclipseGitProgressTransformer(new SubProgressMonitor(monitor, 50))).call();
+          git.pull().setProgressMonitor(new EclipseGitProgressTransformer(SubMonitor.convert(monitor, 50))).call();
 
           return Status.OK_STATUS;
         }

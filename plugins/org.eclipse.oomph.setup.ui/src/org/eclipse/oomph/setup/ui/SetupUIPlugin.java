@@ -55,7 +55,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.dynamichelpers.IExtensionTracker;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -284,7 +284,7 @@ public final class SetupUIPlugin extends OomphUIPlugin
         perform(uris);
       }
     };
-    resourceMirror.begin(new SubProgressMonitor(monitor, work));
+    resourceMirror.begin(SubMonitor.convert(monitor, work));
   }
 
   private static Set<? extends EObject> checkCrossReferences(ResourceSet resourceSet, URI uri)

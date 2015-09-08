@@ -48,7 +48,7 @@ import org.eclipse.emf.ecore.util.InternalEList;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.p2.metadata.Version;
 import org.eclipse.pde.core.target.ITargetDefinition;
@@ -920,7 +920,7 @@ public class TargletTaskImpl extends SetupTaskImpl implements TargletTask
         {
           if (targetDefinition == null)
           {
-            targetDefinition = getTargetDefinition(service, new SubProgressMonitor(monitor, 1));
+            targetDefinition = getTargetDefinition(service, SubMonitor.convert(monitor, 1));
           }
 
           if (targetDefinition == null)
@@ -973,11 +973,11 @@ public class TargletTaskImpl extends SetupTaskImpl implements TargletTask
             TargletsCorePlugin.INSTANCE.setCacheUsageConfirmer(cacheUsageConfirmer);
 
             targletContainer.setTarglets(targlets);
-            targletContainer.forceUpdate(true, mirrors, new SubProgressMonitor(monitor, 90));
+            targletContainer.forceUpdate(true, mirrors, SubMonitor.convert(monitor, 90));
 
             try
             {
-              Job.getJobManager().join(WorkspaceIUImporter.WORKSPACE_IU_IMPORT_FAMILY, new SubProgressMonitor(monitor, 10));
+              Job.getJobManager().join(WorkspaceIUImporter.WORKSPACE_IU_IMPORT_FAMILY, SubMonitor.convert(monitor, 10));
             }
             catch (InterruptedException ex)
             {

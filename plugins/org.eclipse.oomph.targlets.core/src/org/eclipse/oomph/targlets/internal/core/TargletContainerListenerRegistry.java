@@ -21,7 +21,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IRegistryEventListener;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -84,7 +84,7 @@ public class TargletContainerListenerRegistry implements ITargletContainerListen
     {
       try
       {
-        listener.handleTargletContainerEvent(event, new SubProgressMonitor(monitor, 1));
+        listener.handleTargletContainerEvent(event, SubMonitor.convert(monitor, 1));
       }
       catch (Exception ex)
       {

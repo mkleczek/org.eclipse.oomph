@@ -20,7 +20,7 @@ import org.eclipse.oomph.util.StringUtil;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -107,7 +107,7 @@ public final class JREManager
 
       for (int i = 0; i < children; i++)
       {
-        addExtraJavaHomes(extraJavaHomes, childFolders[i], false, result, new SubProgressMonitor(monitor, 1));
+        addExtraJavaHomes(extraJavaHomes, childFolders[i], false, result, SubMonitor.convert(monitor, 1));
       }
     }
     catch (OperationCanceledException ex)
