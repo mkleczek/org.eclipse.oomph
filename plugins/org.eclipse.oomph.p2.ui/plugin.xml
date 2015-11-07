@@ -58,6 +58,15 @@
             id="org.eclipse.oomph.p2.ui.ExploreRepository"
             name="Explore Repository">
       </command>
+      <category
+            id="org.eclipse.oomph.p2.ui.commands.category"
+            name="Sample Category">
+      </category>
+      <command
+            categoryId="org.eclipse.oomph.p2.ui.commands.category"
+            id="org.eclipse.oomph.p2.ui.commands.sampleCommand"
+            name="Sample Command">
+      </command>
    </extension>
 
    <extension
@@ -75,6 +84,10 @@
                 </adapt>
              </iterate>
          </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.oomph.p2.ui.handlers.StripReleaseTrainHandler"
+            commandId="org.eclipse.oomph.p2.ui.commands.sampleCommand">
       </handler>
    </extension>
 
@@ -103,6 +116,33 @@
                 tooltip="Offline Mode">
           </command>
       </menuContribution>
+      <!--
+      <menuContribution
+            locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+         <menu
+               id="org.eclipse.oomph.p2.ui.menus.sampleMenu"
+               label="Sample Menu"
+               mnemonic="M">
+            <command
+                  commandId="org.eclipse.oomph.p2.ui.commands.sampleCommand"
+                  id="org.eclipse.oomph.p2.ui.menus.sampleCommand"
+                  mnemonic="S">
+            </command>
+         </menu>
+      </menuContribution>
+      <menuContribution
+            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+         <toolbar
+               id="org.eclipse.oomph.p2.ui.toolbars.sampleToolbar">
+            <command
+                  commandId="org.eclipse.oomph.p2.ui.commands.sampleCommand"
+                  icon="icons/sample.gif"
+                  id="org.eclipse.oomph.p2.ui.toolbars.sampleCommand"
+                  tooltip="Say hello world">
+            </command>
+         </toolbar>
+      </menuContribution>
+  -->
    </extension>
 
 </plugin>

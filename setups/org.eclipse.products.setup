@@ -31,6 +31,95 @@
     <repository
         url="${oomph.update.url}"/>
   </setupTask>
+  <setupTask
+      xsi:type="setup:CompoundTask"
+      name="Offline Redirections">
+    <setupTask
+        xsi:type="setup:VariableTask"
+        name="oomph.tutorial.location"
+        defaultValue="${eclipse.home.root.location|basepath|basepath}"
+        label="Oomph Tutorial Location">
+      <description>The root folder for the Oomph tutorial distribution</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:EclipseIniTask"
+        excludedTriggers="STARTUP MANUAL"
+        option="-Doomph.redirection.archive="
+        value="http://www.eclipse.org/setups/setups.zip->${oomph.tutorial.location}/setups/setups.zip"
+        vm="true"/>
+    <setupTask
+        xsi:type="setup:EclipseIniTask"
+        excludedTriggers="STARTUP MANUAL"
+        option="-Doomph.tutorial.location="
+        value="${oomph.tutorial.location}"
+        vm="true"/>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/"
+        targetURL="${oomph.tutorial.location}/p2/">
+      <description>Redirect all of download.eclipse.org to the tutorial's local mirrors</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="git://git.eclipse.org/gitroot/"
+        targetURL="${oomph.tutorial.location}/git/">
+      <description>Redirect all git access to git.eclipse.org to the tutorial's local clones</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://git.eclipse.org/gitroot/"
+        targetURL="${oomph.tutorial.location}/git/">
+      <description>Redirect all http access to git.eclipse.org to the tutorial's local clones</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="https://git.eclipse.org/r/"
+        targetURL="${oomph.tutorial.location}/git/">
+      <description>Redirect all http access to git.eclipse.org to the tutorial's local clones</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/egit/updates"
+        targetURL="http://download.eclipse.org/releases/mars/201510021000">
+      <description>Redirect egit updates to update from the Mars release</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/releases/mars"
+        targetURL="http://download.eclipse.org/releases/mars/201510021000">
+      <description>Redirect the Mars composite to the release child of that composite</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/eclipse/updates/4.5"
+        targetURL="http://download.eclipse.org/releases/mars/201510021000">
+      <description>Redirect the Platform's 4.5 updates to the Mars release</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/egit/updates-stable-nightly"
+        targetURL="http://download.eclipse.org/releases/mars/201510021000">
+      <description>Redirect the Platform's 4.5 milestone updates to the Mars release</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/modeling/emf/emf/updates/nightly/core"
+        targetURL="http://download.eclipse.org/releases/mars/201510021000">
+      <description>Redirect the Platform's 4.5 milestone updates to the Mars release</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/modeling/emf/cdo/orbit/latest-R"
+        targetURL="http://download.eclipse.org/tools/orbit/downloads/drops/R20150519210750/repository">
+      <description>Redirect the Platform's 4.5 milestone updates to the Mars release</description>
+    </setupTask>
+    <setupTask
+        xsi:type="setup:RedirectionTask"
+        sourceURL="http://download.eclipse.org/mylyn/snapshots/weekly"
+        targetURL="http://download.eclipse.org/releases/mars/201510021000">
+      <description>Redirect the Platform's 4.5 milestone updates to the Mars release</description>
+    </setupTask>
+  </setupTask>
   <product name="epp.package.java"
       label="Eclipse IDE for Java Developers">
     <annotation

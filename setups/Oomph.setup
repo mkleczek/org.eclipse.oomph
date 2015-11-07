@@ -47,8 +47,6 @@
     <requirement
         name="org.eclipse.oomph.projectcopy.feature.group"/>
     <requirement
-        name="org.eclipse.oomph.version.feature.group"/>
-    <requirement
         name="org.eclipse.emf.ecoretools.sdk.feature.group"/>
     <requirement
         name="org.eclipse.swtbot.ide.feature.group"/>
@@ -114,12 +112,6 @@
   </setupTask>
   <setupTask
       xsi:type="setup:EclipseIniTask"
-      option="-Doomph.redirection.setups"
-      value="=http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/->${git.clone.oomph.location|uri}/setups/"
-      vm="true"
-      documentation="Redirect to the development version of the releng setup model."/>
-  <setupTask
-      xsi:type="setup:EclipseIniTask"
       option="-Xmx"
       value="2048m"
       vm="true"/>
@@ -162,24 +154,9 @@
     <setupTask
         xsi:type="git:GitCloneTask"
         id="git.clone.oomph"
-        remoteURI="oomph/org.eclipse.oomph"
+        remoteURI="https://git.eclipse.org/r/oomph/org.eclipse.oomph"
         checkoutBranch="master"
         userID="">
-      <annotation
-          source="http://www.eclipse.org/oomph/setup/InducedChoices">
-        <detail
-            key="inherit">
-          <value>eclipse.git.gerrit.remoteURIs</value>
-        </detail>
-        <detail
-            key="label">
-          <value>Oomph Git or Gerrit Repository</value>
-        </detail>
-        <detail
-            key="target">
-          <value>remoteURI</value>
-        </detail>
-      </annotation>
       <description>Oomph</description>
     </setupTask>
     <setupTask

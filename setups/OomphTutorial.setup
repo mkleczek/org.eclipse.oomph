@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<setup:Project
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:projects="http://www.eclipse.org/oomph/setup/projects/1.0"
+    xmlns:setup="http://www.eclipse.org/oomph/setup/1.0"
+    xmlns:setup.p2="http://www.eclipse.org/oomph/setup/p2/1.0"
+    xsi:schemaLocation="http://www.eclipse.org/oomph/setup/projects/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/Projects.ecore"
+    name="oomph-tutorial"
+    label="Oomph Tutorial">
+  <setupTask
+      xsi:type="setup:EclipseIniTask"
+      option="-Xmx"
+      value="1024m"
+      vm="true">
+    <description>Set the heap space needed to work with the projects of ${scope.project.label}</description>
+  </setupTask>
+  <setupTask
+      xsi:type="setup:PreferenceTask"
+      key="/instance/org.eclipse.ui.ide/WORKSPACE_NAME"
+      value="Oomph Tutorial"/>
+  <setupTask
+      xsi:type="setup:StringSubstitutionTask"
+      name="oomph.tutorial.location"
+      value="${oomph.tutorial.location|file}"/>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="eclipse.target.platform"
+      value="None"
+      defaultValue="Mars"
+      storageURI="scope://Workspace"/>
+  <setupTask
+      xsi:type="setup.p2:P2Task">
+    <requirement
+        name="org.eclipse.oomph.setup.sdk.feature.group"/>
+    <requirement
+        name="org.eclipse.oomph.workingsets.feature.group"/>
+    <requirement
+        name="org.eclipse.oomph.targlets.feature.group"/>
+    <requirement
+        name="org.eclipse.oomph.ostools.feature.group"
+        optional="true"/>
+    <description>Install the tools needed in the IDE to work with the source code for ${scope.project.label}</description>
+  </setupTask>
+  <setupTask
+      xsi:type="setup:ResourceCreationTask"
+      excludedTriggers="STARTUP MANUAL"
+      content="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>&#xD;&#xA;&lt;section name=&quot;Workbench&quot;>&#xD;&#xA;        &lt;section name=&quot;RepositoryManager&quot;>&#xD;&#xA;                &lt;list key=&quot;repositories&quot;>&#xD;&#xA;                        &lt;item value=&quot;${oomph.tutorial.location}/p2/cbi/updates/license&quot;/>&#xD;&#xA;                        &lt;item value=&quot;${oomph.tutorial.location}/p2/oomph/products/repository&quot;/>&#xD;&#xA;                        &lt;item value=&quot;${oomph.tutorial.location}/p2/oomph/updates/milestone/latest&quot;/>&#xD;&#xA;                        &lt;item value=&quot;${oomph.tutorial.location}/p2/releases/mars/201510021000&quot;/>&#xD;&#xA;                        &lt;item value=&quot;${oomph.tutorial.location}/p2/technology/epp/packages/mars&quot;/>&#xD;&#xA;                        &lt;item value=&quot;${oomph.tutorial.location}/p2/tools/orbit/downloads/drops/R20150519210750/repository&quot;/>&#xD;&#xA;                &lt;/list>&#xD;&#xA;        &lt;/section>&#xD;&#xA;&lt;/section>"
+      targetURL="${workspace.location|uri}/.metadata/.plugins/org.eclipse.oomph.p2.ui/dialog_settings.xml"
+      encoding="UTF-8">
+    <description>Initialize the Repository Explorer history list with the local p2 mirrors of the tutorial</description>
+  </setupTask>
+  <setupTask
+      xsi:type="projects:ProjectsImportTask">
+    <sourceLocator
+        rootFolder="${oomph.tutorial.location|file/oomph-tutorial}"/>
+    <description>Import the oomph-tutorial project into the Oomph tutorial workspace</description>
+  </setupTask>
+  <stream name="master"
+      label="Master"/>
+  <logicalProjectContainer
+      xsi:type="setup:ProjectCatalog"
+      href="index:/org.eclipse.setup#//@projectCatalogs[name='org.eclipse']"/>
+  <description>Oomph Tutorial provides a development environment for developing project setups</description>
+</setup:Project>
