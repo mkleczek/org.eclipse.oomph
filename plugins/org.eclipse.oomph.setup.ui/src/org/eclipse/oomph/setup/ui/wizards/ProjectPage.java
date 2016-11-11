@@ -1163,26 +1163,6 @@ public class ProjectPage extends SetupWizardPage
     }
   }
 
-  public static void hookTransferControl(Shell shell, Control execludedControl, SetupTransferSupport transferSupport,
-      ConfigurationListener configurationListener)
-  {
-    shell.addShellListener(configurationListener);
-
-    // Listen for drops on the overall composite.
-    for (Control control : shell.getChildren())
-    {
-      if (control instanceof Composite)
-      {
-        transferSupport.addControl(control);
-        break;
-      }
-    }
-
-    // But exclude the page itself.
-    transferSupport.excludeControl(execludedControl);
-    configurationListener.checkConfigurationAvailability();
-  }
-
   @Override
   public void leavePage(boolean forward)
   {
@@ -1204,13 +1184,6 @@ public class ProjectPage extends SetupWizardPage
         selectionMementoTried.set(true);
       }
     }
-  }
-
-  public static void unhookTransferControl(Shell shell, Control execludedControl, SetupTransferSupport transferSupport,
-      ConfigurationListener configurationListener)
-  {
-    shell.removeShellListener(configurationListener);
-    transferSupport.removeControls();
   }
 
   @Override
@@ -1488,6 +1461,33 @@ public class ProjectPage extends SetupWizardPage
     super.dispose();
 
     adapterFactory.dispose();
+  }
+
+  public static void hookTransferControl(Shell shell, Control execludedControl, SetupTransferSupport transferSupport,
+      ConfigurationListener configurationListener)
+  {
+    shell.addShellListener(configurationListener);
+  
+    // Listen for drops on the overall composite.
+    for (Control control : shell.getChildren())
+    {
+      if (control instanceof Composite)
+      {
+        transferSupport.addControl(control);
+        break;
+      }
+    }
+  
+    // But exclude the page itself.
+    transferSupport.excludeControl(execludedControl);
+    configurationListener.checkConfigurationAvailability();
+  }
+
+  public static void unhookTransferControl(Shell shell, Control execludedControl, SetupTransferSupport transferSupport,
+      ConfigurationListener configurationListener)
+  {
+    shell.removeShellListener(configurationListener);
+    transferSupport.removeControls();
   }
 
   private static void createProjectLabel(Project project, StringBuilder builder)

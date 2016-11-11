@@ -51,6 +51,8 @@ public final class KeepInstallerDialog extends AbstractSetupDialog
 
   private Button desktopButton;
 
+  private Button registerButton;
+
   public KeepInstallerDialog(Shell parentShell, boolean startPermanentInstaller)
   {
     super(parentShell, PropertiesUtil.getProductName(), 560, 270, SetupInstallerPlugin.INSTANCE, false);
@@ -173,6 +175,13 @@ public final class KeepInstallerDialog extends AbstractSetupDialog
       desktopButton.setSelection(true);
     }
 
+    new Label(parent, SWT.NONE);
+    registerButton = new Button(parent, SWT.CHECK);
+    registerButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
+    registerButton.setText("Register file association");
+    registerButton.setToolTipText("Associate this installer with '.setup' files");
+    registerButton.setSelection(true);
+
     setDefaultLocation(locationText);
   }
 
@@ -184,6 +193,7 @@ public final class KeepInstallerDialog extends AbstractSetupDialog
     {
       final boolean startMenu = startMenuButton == null ? false : startMenuButton.getSelection();
       final boolean desktop = desktopButton == null ? false : desktopButton.getSelection();
+      final boolean register = registerButton.getSelection();
 
       ProgressMonitorDialog progressMonitorDialog = new ProgressMonitorDialog((Shell)getShell().getParent());
 
@@ -194,7 +204,13 @@ public final class KeepInstallerDialog extends AbstractSetupDialog
           public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException
           {
             monitor.beginTask("Copying installer to " + location, IProgressMonitor.UNKNOWN);
-            KeepInstallerUtil.keepInstaller(location, startPermanentInstaller, launcher, startMenu, desktop, false);
+            String permanentLauncher = KeepInstallerUtil.keepInstaller(location, startPermanentInstaller, launcher, startMenu, desktop, false);
+
+            if (register)
+            {
+              FileAssociationUtil.INSTANCE.register(permanentLauncher);
+            }
+
             monitor.done();
           }
         });
@@ -226,6 +242,7 @@ public final class KeepInstallerDialog extends AbstractSetupDialog
       {
         File home = new File(PropertiesUtil.getUserHome());
         String folderName = PropertiesUtil.getProductName().toLowerCase().replace(' ', '-');
+
         for (int i = 1; i < Integer.MAX_VALUE; i++)
         {
           File folder = new File(home, folderName + (i > 1 ? i : ""));

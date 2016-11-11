@@ -43,35 +43,28 @@ public final class KeepInstallerUtil
   {
     try
     {
-      String powerShell = KeepInstallerUtil.getPowerShell();
+      String powerShell = getPowerShell();
       if (powerShell != null)
       {
         if (groupName != null)
         {
-          Runtime.getRuntime().exec(
-              new String[] {
-                  powerShell,
-                  "-command",
-                  "& { " + "$folderPath = Join-Path ([Environment]::GetFolderPath('" + specialFolder + "')) '" + groupName + "';"
-                      + //
-                      "[system.io.directory]::CreateDirectory($folderPath); "
-                      + //
+          Runtime.getRuntime()
+              .exec(new String[] { powerShell, "-command",
+                  "& { " + "$folderPath = Join-Path ([Environment]::GetFolderPath('" + specialFolder + "')) '" + groupName + "';" + //
+                      "[system.io.directory]::CreateDirectory($folderPath); " + //
                       "$linkPath = Join-Path $folderPath '" + shortcutName + ".lnk'; $targetPath = '" + target
                       + "'; $link = (New-Object -ComObject WScript.Shell).CreateShortcut( $linkpath ); $link.TargetPath = $targetPath; $link.Save()}" });
 
         }
         else
         {
-          Runtime.getRuntime().exec(
-              new String[] {
-                  powerShell,
-                  "-command",
+          Runtime.getRuntime()
+              .exec(new String[] { powerShell, "-command",
                   "& {$linkPath = Join-Path ([Environment]::GetFolderPath('" + specialFolder + "')) '" + shortcutName + ".lnk'; $targetPath = '" + target
                       + "'; $link = (New-Object -ComObject WScript.Shell).CreateShortcut( $linkpath ); $link.TargetPath = $targetPath; $link.Save()}" });
 
         }
       }
-      // [system.io.directory]::CreateDirectory("C:\test")
     }
     catch (IOException ex)
     {
@@ -83,12 +76,11 @@ public final class KeepInstallerUtil
   {
     try
     {
-      String powerShell = KeepInstallerUtil.getPowerShell();
+      String powerShell = getPowerShell();
       if (powerShell != null)
       {
-        Runtime.getRuntime().exec(
-            new String[] { powerShell, "-command",
-                "& { (new-object -c shell.application).namespace('" + location + "').parsename('" + launcherName + "').invokeverb('taskbarpin') }" });
+        Runtime.getRuntime().exec(new String[] { powerShell, "-command",
+            "& { (new-object -c shell.application).namespace('" + location + "').parsename('" + launcherName + "').invokeverb('taskbarpin') }" });
       }
     }
     catch (IOException ex)
@@ -160,7 +152,7 @@ public final class KeepInstallerUtil
     return powerShell;
   }
 
-  public static void keepInstaller(String targetLocation, boolean startPermanentInstaller, String launcher, boolean startMenu, boolean desktop,
+  public static String keepInstaller(String targetLocation, boolean startPermanentInstaller, String launcher, boolean startMenu, boolean desktop,
       boolean quickLaunch)
   {
     File source = new File(launcher).getParentFile();
@@ -174,7 +166,7 @@ public final class KeepInstallerUtil
     {
       try
       {
-        Runtime.getRuntime().exec(permanentLauncher);
+        InstallerApplication.launch(permanentLauncher);
       }
       catch (Exception ex)
       {
@@ -203,6 +195,7 @@ public final class KeepInstallerUtil
     }
 
     setKeepInstaller(true);
+    return permanentLauncher;
   }
 
   public static boolean isInstallerKept()

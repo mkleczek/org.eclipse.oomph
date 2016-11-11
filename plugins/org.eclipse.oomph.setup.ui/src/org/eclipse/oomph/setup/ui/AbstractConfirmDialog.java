@@ -26,7 +26,7 @@ public abstract class AbstractConfirmDialog extends AbstractSetupDialog
 {
   private final String rememberButtonText;
 
-  private boolean remember;
+  private boolean remember = getRememberButtonDefaultValue();
 
   public AbstractConfirmDialog(Shell parentShell, String title, int width, int height, String rememberButtonText)
   {
@@ -48,6 +48,7 @@ public abstract class AbstractConfirmDialog extends AbstractSetupDialog
   protected void createButtonsForButtonBar(Composite parent)
   {
     final Button rememberButton = createCheckbox(parent, rememberButtonText);
+    rememberButton.setSelection(remember);
     rememberButton.addSelectionListener(new SelectionAdapter()
     {
       @Override
@@ -75,5 +76,10 @@ public abstract class AbstractConfirmDialog extends AbstractSetupDialog
   protected String getRememberButtonToolTip()
   {
     return null;
+  }
+
+  protected boolean getRememberButtonDefaultValue()
+  {
+    return false;
   }
 }

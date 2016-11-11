@@ -803,6 +803,7 @@ public class VariablePage extends SetupWizardPage implements SetupPrompter
     @SuppressWarnings("unchecked")
     List<SetupTaskPerformer> performers = (List<SetupTaskPerformer>)contexts;
     allPromptedPerfomers.addAll(performers);
+
     for (SetupTaskPerformer performer : performers)
     {
       boolean resolvedAll = true;
