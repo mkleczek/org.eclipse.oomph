@@ -10,15 +10,29 @@
  */
 package org.eclipse.oomph.setup.internal.core;
 
+import org.eclipse.oomph.base.Annotation;
 import org.eclipse.oomph.base.util.EAnnotations;
+import org.eclipse.oomph.setup.AnnotationConstants;
+import org.eclipse.oomph.setup.Configuration;
+import org.eclipse.oomph.setup.Installation;
+import org.eclipse.oomph.setup.ProductVersion;
+import org.eclipse.oomph.setup.Project;
+import org.eclipse.oomph.setup.Scope;
+import org.eclipse.oomph.setup.SetupTask;
+import org.eclipse.oomph.setup.SetupTaskContainer;
+import org.eclipse.oomph.setup.Stream;
+import org.eclipse.oomph.setup.Workspace;
 import org.eclipse.oomph.setup.internal.core.util.ECFURIHandlerImpl;
 import org.eclipse.oomph.setup.internal.core.util.ECFURIHandlerImpl.CacheHandling;
 import org.eclipse.oomph.setup.internal.core.util.ResourceMirror;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
+import org.eclipse.oomph.util.CollectionUtil;
 import org.eclipse.oomph.util.IORuntimeException;
 import org.eclipse.oomph.util.IOUtil;
 import org.eclipse.oomph.util.OS;
+import org.eclipse.oomph.util.StringUtil;
 
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -42,6 +56,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -324,6 +339,8 @@ public class SetupArchiver implements IApplication
     if (!hasEcoreFailures)
     {
       boolean hasFailures = false;
+      Map<Project, Set<Configuration>> configurations = new LinkedHashMap<Project, Set<Configuration>>();
+
       for (Resource resource : resourceSet.getResources())
       {
         URI uri = resource.getURI();
@@ -365,6 +382,8 @@ public class SetupArchiver implements IApplication
               System.err.println("FAILED to save " + normalizedURI);
               ex.printStackTrace();
             }
+
+            collectConfigurations(resource, configurations);
           }
         }
         else
@@ -382,6 +401,7 @@ public class SetupArchiver implements IApplication
         for (String entryName : entryNames)
         {
           URI archiveEntry = URI.createURI(outputLocation + entryName);
+
           try
           {
             uriConverter.delete(archiveEntry, null);
@@ -392,6 +412,8 @@ public class SetupArchiver implements IApplication
           }
         }
       }
+
+      createConfigurationPage(configurations);
     }
 
     long finalLastModified = lastModified == 0 ? file.lastModified() : temp.lastModified();
@@ -529,6 +551,128 @@ public class SetupArchiver implements IApplication
     {
       System.err.println("  ERROR: " + diagnostic.getMessage() + " " + diagnostic.getLine() + " " + diagnostic.getLine() + " " + diagnostic.getColumn());
     }
+  }
+
+  private void collectConfigurations(Resource resource, Map<Project, Set<Configuration>> configurations)
+  {
+    EObject root = resource.getContents().get(0);
+    if (root instanceof Configuration)
+    {
+      Configuration configuration = (Configuration)root;
+      Workspace workspace = configuration.getWorkspace();
+      if (workspace != null)
+      {
+        for (Stream stream : workspace.getStreams())
+        {
+          Project project = stream.getProject();
+          CollectionUtil.add(configurations, project, configuration);
+        }
+      }
+    }
+  }
+
+  private void createConfigurationPage(Map<Project, Set<Configuration>> configurations)
+  {
+    for (Map.Entry<Project, Set<Configuration>> entry : configurations.entrySet())
+    {
+      Project project = entry.getKey();
+      System.out.println(getLabel(project));
+
+      for (Configuration configuration : entry.getValue())
+      {
+        System.out.println("  Configuration: " + EcoreUtil.getURI(configuration));
+
+        Installation installation = configuration.getInstallation();
+        if (installation != null)
+        {
+          System.out.println("    " + getLabel(installation) + getDescription(installation));
+
+          ProductVersion productVersion = installation.getProductVersion();
+          if (productVersion != null)
+          {
+            System.out.println("      " + getLabel(productVersion.getProduct()) + " (" + getLabel(productVersion) + ")" + getDescription(productVersion));
+          }
+        }
+
+        Workspace workspace = configuration.getWorkspace();
+        System.out.println("    " + getLabel(workspace) + getDescription(workspace));
+
+        Set<String> gitRepos = new HashSet<String>();
+        for (Stream stream : workspace.getStreams())
+        {
+          System.out.println("      " + getLabel(stream.getProject()) + " (" + getLabel(stream) + ")" + getDescription(stream));
+          findGitRepos(stream, gitRepos);
+        }
+
+        for (String gitRepo : gitRepos)
+        {
+          System.out.println("        " + gitRepo);
+        }
+      }
+    }
+  }
+
+  private void findGitRepos(Scope scope, Set<String> gitRepos)
+  {
+    findGitRepos(scope.getSetupTasks(), gitRepos);
+
+    Scope parentScope = scope.getParentScope();
+    if (parentScope instanceof Project)
+    {
+      findGitRepos(parentScope, gitRepos);
+    }
+  }
+
+  private void findGitRepos(EList<SetupTask> setupTasks, Set<String> gitRepos)
+  {
+    for (SetupTask setupTask : setupTasks)
+    {
+      EClass eClass = setupTask.eClass();
+
+      if ("GitCloneTask".equals(eClass.getName()))
+      {
+        String remoteURI = (String)setupTask.eGet(eClass.getEStructuralFeature("remoteURI"));
+
+        Annotation annotation = setupTask.getAnnotation(AnnotationConstants.ANNOTATION_INDUCED_CHOICES);
+        if (annotation != null)
+        {
+          int xxx;
+        }
+
+        gitRepos.add(remoteURI);
+      }
+
+      if (setupTask instanceof SetupTaskContainer)
+      {
+        SetupTaskContainer container = (SetupTaskContainer)setupTask;
+        findGitRepos(container.getSetupTasks(), gitRepos);
+      }
+    }
+  }
+
+  private String getLabel(Scope scope)
+  {
+    if (scope instanceof Project)
+    {
+      Project parentProject = ((Project)scope).getParentProject();
+      if (parentProject != null)
+      {
+        return getLabel(parentProject) + " - " + SetupCoreUtil.getLabel(scope);
+      }
+    }
+
+    return SetupCoreUtil.getLabel(scope);
+  }
+
+  private String getDescription(Scope scope)
+  {
+    String description = scope.getDescription();
+    if (!StringUtil.isEmpty(description))
+    {
+      return " --> " + description;
+    }
+
+    return "";
   }
 
   public void stop()
