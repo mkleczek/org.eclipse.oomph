@@ -11,7 +11,11 @@
 package org.eclipse.oomph.setup.provider;
 
 import org.eclipse.oomph.base.provider.ModelElementItemProvider;
+import org.eclipse.oomph.preferences.PreferenceItem;
+import org.eclipse.oomph.preferences.PreferenceNode;
+import org.eclipse.oomph.preferences.Property;
 import org.eclipse.oomph.setup.InstallationTask;
+import org.eclipse.oomph.setup.PreferenceTask;
 import org.eclipse.oomph.setup.ProductCatalog;
 import org.eclipse.oomph.setup.ProjectCatalog;
 import org.eclipse.oomph.setup.SetupFactory;
@@ -19,13 +23,17 @@ import org.eclipse.oomph.setup.SetupPackage;
 import org.eclipse.oomph.setup.SetupTaskContainer;
 import org.eclipse.oomph.setup.WorkspaceTask;
 
+import org.eclipse.emf.common.command.Command;
+import org.eclipse.emf.common.command.UnexecutableCommand;
 import org.eclipse.emf.common.notify.AdapterFactory;
 import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.edit.command.CommandParameter;
+import org.eclipse.emf.edit.domain.EditingDomain;
 import org.eclipse.emf.edit.provider.IItemPropertyDescriptor;
 import org.eclipse.emf.edit.provider.ViewerNotification;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -226,4 +234,58 @@ public class SetupTaskContainerItemProvider extends ModelElementItemProvider
     return false;
   }
 
+  @Override
+  protected Command factorAddCommand(EditingDomain domain, CommandParameter commandParameter)
+  {
+    Collection<?> collection = commandParameter.getCollection();
+    if (collection == null || collection.isEmpty())
+    {
+      return UnexecutableCommand.INSTANCE;
+    }
+
+    List<Object> filteredCollection = new ArrayList<Object>();
+    for (Object object : collection)
+    {
+      if (object instanceof PreferenceItem)
+      {
+        PreferenceItem item = (PreferenceItem)object;
+        if (item.eContainer() == null)
+        {
+          return UnexecutableCommand.INSTANCE;
+        }
+
+        addPreferenceItem(filteredCollection, item);
+      }
+      else
+      {
+        filteredCollection.add(object);
+      }
+    }
+
+    return super.factorAddCommand(domain, new CommandParameter(commandParameter.getOwner(), commandParameter.getFeature(), commandParameter.getValue(),
+        filteredCollection, commandParameter.getIndex()));
+  }
+
+  private void addPreferenceItem(List<Object> filteredCollection, PreferenceItem item)
+  {
+    if (item instanceof PreferenceNode)
+    {
+      PreferenceNode node = (PreferenceNode)item;
+      for (PreferenceNode child : node.getChildren())
+      {
+        addPreferenceItem(filteredCollection, child);
+      }
+
+      // filteredCollection.add(SetupFactory.eINSTANCE.createCompoundTask(node.getName()));
+    }
+    else if (item instanceof Property)
+    {
+      Property property = (Property)item;
+
+      PreferenceTask task = SetupFactory.eINSTANCE.createPreferenceTask();
+      task.setKey("/" + property.getAbsolutePath().authority() + property.getAbsolutePath().path());
+      task.setValue(property.getValue());
+      filteredCollection.add(task);
+    }
+  }
 }
