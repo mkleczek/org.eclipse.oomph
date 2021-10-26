@@ -17,6 +17,8 @@ jobs:
          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_IDENTITY_ID }}
          APPLE_ID: ${{ secrets.APPLE_ID }}
          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+         
+         PRODUCT_BASE: ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product
    
       steps:
          - uses: actions/checkout@v2
@@ -38,23 +40,41 @@ jobs:
          - name: Build with Maven
            run: JAVA_HOME=$JAVA_HOME_17_X64 mvn -B package --file pom.xml -Denv=macaarch64 -DskipTests=true
          
-#      - name: Sign App
-#        run: |
-#            echo $APPLE_CERTIFICATE | base64 —decode > certificate.p12
-#            security create-keychain -p temppwd build.keychain security default-keychain -s build.keychain
-#            security unlock-keychain -p temppwd build.keychain
-#            security import certificate.p12 -k build.keychain -P $APPLE_CERTIFICATE_PASSWORD -T /usr/bin/codesign
-#            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temppwd build.keychain
-#            /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product/macosx/cocoa/aarch64/Eclipse Installer.app" -v
+         - name: Prepare keychain
+           run: |
+               echo $APPLE_CERTIFICATE | base64 —decode > certificate.p12
+               security create-keychain -p temppwd build.keychain
+               security default-keychain -s build.keychain
+               security unlock-keychain -p temppwd build.keychain
+               security import certificate.p12 -k build.keychain -P $APPLE_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+               security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temppwd build.keychain
+
+         - name: Sign App
+           run: |
+               /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "$PRODUCT_BASE/macosx/cocoa/aarch64/Eclipse Installer.app" -v
+               /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "$PRODUCT_BASE.with-jre/macosx/cocoa/aarch64/Eclipse Installer.app" -v
                
          - name: Install create-dmg
            run: brew install create-dmg
                
          - name: Create DMG
            run: |
-              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname Eclipse\ Installer --icon aarch64/Eclipse\ Installer.app/Contents/Resources/eclipse-inst.icns 200 190 Eclipse\ Installer.dmg ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product/macosx/cocoa/aarch64
+              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "Eclipse Installer" --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64
+              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "Eclipse Installer" --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer With JRE.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64
               
-         - name: Upload artifacts
+         - name: Sign DMG
+           run: |
+              /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "Eclipse Installer.dmg" -v
+              /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "Eclipse Installer With JRE.dmg" -v
+              
+         - name: Upload Eclipse Installer
            uses: actions/upload-artifact@v2
            with:
+              name: Eclipse Installer
               path: "Eclipse Installer.dmg"
+
+         - name: Upload Eclipse Installer With JRE
+           uses: actions/upload-artifact@v2
+           with:
+              name: Eclipse Installer With JRE
+              path: "Eclipse Installer With JRE.dmg"
