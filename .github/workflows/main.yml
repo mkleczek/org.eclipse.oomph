@@ -64,8 +64,8 @@ jobs:
               
          - name: Sign DMG
            run: |
-              /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "Eclipse Installer.dmg" -v
-              /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "Eclipse Installer With JRE.dmg" -v
+              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "Eclipse Installer.dmg" -v
+              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "Eclipse Installer With JRE.dmg" -v
               
          - name: Upload Eclipse Installer
            uses: actions/upload-artifact@v2
