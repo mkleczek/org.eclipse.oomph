@@ -42,7 +42,7 @@ jobs:
          
          - name: Prepare keychain
            run: |
-               echo $APPLE_CERTIFICATE | base64 —decode > certificate.p12
+               echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
                security create-keychain -p temppwd build.keychain
                security default-keychain -s build.keychain
                security unlock-keychain -p temppwd build.keychain
