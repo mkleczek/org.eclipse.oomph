@@ -1,7 +1,4 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
-
-name: Java CI with Maven
+name: Build Mac OS aarch64 installer
 
 on: workflow_dispatch
 
@@ -19,6 +16,8 @@ jobs:
          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
          
          PRODUCT_BASE: ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product
+         
+         VOLUME_NAME: Eclipse Installer
    
       steps:
          - uses: actions/checkout@v2
@@ -59,22 +58,22 @@ jobs:
                
          - name: Create DMG
            run: |
-              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "Eclipse Installer" --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64
-              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "Eclipse Installer" --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer With JRE.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64
+              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64
+              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer With JRE.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64
               
          - name: Sign DMG
            run: |
-              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "Eclipse Installer.dmg" -v
-              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "Eclipse Installer With JRE.dmg" -v
+              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-aarch64.dmg" -v
+              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-jre-aarch64.dmg" -v
               
          - name: Upload Eclipse Installer
            uses: actions/upload-artifact@v2
            with:
               name: Eclipse Installer
-              path: "Eclipse Installer.dmg"
+              path: "eclipse-inst-aarch64.dmg"
 
          - name: Upload Eclipse Installer With JRE
            uses: actions/upload-artifact@v2
            with:
               name: Eclipse Installer With JRE
-              path: "Eclipse Installer With JRE.dmg"
+              path: "eclipse-inst-jre-aarch64.dmg"
