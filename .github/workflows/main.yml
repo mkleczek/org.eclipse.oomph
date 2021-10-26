@@ -6,30 +6,30 @@ name: Java CI with Maven
 on: workflow_dispatch
 
 jobs:
-build:
-
-   runs-on: macos-latest
-
-   env:
-      ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_IDENTITY_ID }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-
-   steps:
-      - uses: actions/checkout@v2
-      
+   build:
+   
+      runs-on: macos-latest
+   
+      env:
+         ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
+         APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+         APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+         APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_IDENTITY_ID }}
+         APPLE_ID: ${{ secrets.APPLE_ID }}
+         APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+   
+      steps:
+         - uses: actions/checkout@v2
+         
 #      - name: Set up JDK 17
 #        uses: actions/setup-java@v2
 #        with:
 #           java-version: '17'
 #           distribution: 'zulu'
 #           cache: maven
-      - name: Build with Maven
-        run: JAVA_HOME=$JAVA_HOME_17_X64 mvn -B package --file pom.xml -Denv=macaarch64 -DskipTests=true
-      
+         - name: Build with Maven
+           run: JAVA_HOME=$JAVA_HOME_17_X64 mvn -B package --file pom.xml -Denv=macaarch64 -DskipTests=true
+         
 #      - name: Sign App
 #        run: |
 #            echo $APPLE_CERTIFICATE | base64 —decode > certificate.p12
@@ -38,15 +38,15 @@ build:
 #            security import certificate.p12 -k build.keychain -P $APPLE_CERTIFICATE_PASSWORD -T /usr/bin/codesign
 #            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temppwd build.keychain
 #            /usr/bin/codesign --force -s $APPLE_SIGNING_IDENTITY "./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product/macosx/cocoa/aarch64/Eclipse Installer.app" -v
-            
-      - name: Install create-dmg
-        run: brew install create-dmg
-            
-      - name: Create DMG
-        run: |
-           create-dmg --window-size 800 400 --app-drop-link 600 185  --volname Eclipse\ Installer --icon aarch64/Eclipse\ Installer.app/Contents/Resources/eclipse-inst.icns 200 190 Eclipse\ Installer.dmg ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product/macosx/cocoa/aarch64
-           
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-           path: "Eclipse Installer.dmg"
+               
+         - name: Install create-dmg
+           run: brew install create-dmg
+               
+         - name: Create DMG
+           run: |
+              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname Eclipse\ Installer --icon aarch64/Eclipse\ Installer.app/Contents/Resources/eclipse-inst.icns 200 190 Eclipse\ Installer.dmg ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product/macosx/cocoa/aarch64
+              
+         - name: Upload artifacts
+           uses: actions/upload-artifact@v2
+           with:
+              path: "Eclipse Installer.dmg"
