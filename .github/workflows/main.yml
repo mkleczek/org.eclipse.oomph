@@ -13,6 +13,7 @@ jobs:
          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
          APPLE_ID: ${{ secrets.APPLE_ID }}
+         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
          
          PRODUCT_BASE: ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product
@@ -51,20 +52,25 @@ jobs:
          - name: Sign App
            run: |
                /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "$PRODUCT_BASE/macosx/cocoa/aarch64/Eclipse Installer.app" -v
-               /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "$PRODUCT_BASE.with-jre/macosx/cocoa/aarch64/Eclipse Installer.app" -v
+#               /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "$PRODUCT_BASE.with-jre/macosx/cocoa/aarch64/Eclipse Installer.app" -v
                
          - name: Install create-dmg
            run: brew install create-dmg
                
-         - name: Create DMG
+         - name: Create Eclipse Installer DMG
            run: |
-              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64
-              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer With JRE.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64
+              create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "eclipse-inst-aarch64.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64
+ #             create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "Eclipse Installer With JRE.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64
               
          - name: Sign DMG
            run: |
-              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-aarch64.dmg" -v
-              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-jre-aarch64.dmg" -v
+              /usr/bin/codesign --force --options runtime -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-aarch64.dmg" -v
+#              /usr/bin/codesign --force --options runtime -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-jre-aarch64.dmg" -v
+              
+         - name: Notarize and staple Eclipse Installer DMG
+           run: |
+              xcrun notarytool submit --wait --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" eclipse-inst-aarch64.dmg
+              xcrun stapler staple eclipse-inst-aarch64.dmg
               
          - name: Upload Eclipse Installer
            uses: actions/upload-artifact@v2
@@ -72,8 +78,8 @@ jobs:
               name: Eclipse Installer
               path: "eclipse-inst-aarch64.dmg"
 
-         - name: Upload Eclipse Installer With JRE
-           uses: actions/upload-artifact@v2
-           with:
-              name: Eclipse Installer With JRE
-              path: "eclipse-inst-jre-aarch64.dmg"
+#         - name: Upload Eclipse Installer With JRE
+#           uses: actions/upload-artifact@v2
+#           with:
+#              name: Eclipse Installer With JRE
+#              path: "eclipse-inst-jre-aarch64.dmg"
