@@ -27,6 +27,14 @@ jobs:
 #           java-version: '17'
 #           distribution: 'zulu'
 #           cache: maven
+
+         - name: Cache Maven packages
+           uses: actions/cache@v2
+           with:
+              path: ~/.m2
+              key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+              restore-keys: ${{ runner.os }}-m2
+
          - name: Build with Maven
            run: JAVA_HOME=$JAVA_HOME_17_X64 mvn -B package --file pom.xml -Denv=macaarch64 -DskipTests=true
          
