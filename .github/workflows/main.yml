@@ -51,7 +51,7 @@ jobs:
 
          - name: Sign App
            run: |
-               /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "$PRODUCT_BASE/macosx/cocoa/aarch64/Eclipse Installer.app" -v
+               /usr/bin/codesign --force --options runtime -s "$APPLE_SIGNING_IDENTITY" "$PRODUCT_BASE/macosx/cocoa/aarch64/Eclipse Installer.app" -v
 #               /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "$PRODUCT_BASE.with-jre/macosx/cocoa/aarch64/Eclipse Installer.app" -v
                
          - name: Install create-dmg
@@ -64,7 +64,7 @@ jobs:
               
          - name: Sign DMG
            run: |
-              /usr/bin/codesign --force --options runtime -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-aarch64.dmg" -v
+              /usr/bin/codesign --force -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-aarch64.dmg" -v
 #              /usr/bin/codesign --force --options runtime -s "$APPLE_SIGNING_IDENTITY" "eclipse-inst-jre-aarch64.dmg" -v
               
          - name: Notarize and staple Eclipse Installer DMG
