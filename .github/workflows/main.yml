@@ -18,7 +18,7 @@ jobs:
          
          PRODUCT_BASE: ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product
          
-         VOLUME_NAME: Eclipse Installer
+         #VOLUME_NAME: Eclipse Installer
    
       steps:
          - uses: actions/checkout@v2
@@ -57,8 +57,8 @@ jobs:
                
          - name: Sign Eclipse Installer app bundles, create, sign, notarize and staple DMGs
            run: |
-              ( codesign --force --entitlements .github/workflows/entitlements.plist --options runtime -s "$APPLE_SIGNING_IDENTITY" -v "$PRODUCT_BASE/macosx/cocoa/aarch64/Eclipse Installer.app" && create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "eclipse-inst-aarch64.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64 && codesign --force -s "$APPLE_SIGNING_IDENTITY" -v "eclipse-inst-aarch64.dmg" && xcrun notarytool submit --wait --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" eclipse-inst-aarch64.dmg && xcrun stapler staple eclipse-inst-aarch64.dmg ) &
-              ( codesign --force --entitlements .github/workflows/entitlements.plist --options runtime -s "$APPLE_SIGNING_IDENTITY" -v "$PRODUCT_BASE.with-jre/macosx/cocoa/aarch64/Eclipse Installer.app" && create-dmg --window-size 800 400 --app-drop-link 600 185  --volname "$VOLUME_NAME" --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "eclipse-inst-jre-aarch64.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64 && codesign --force -s "$APPLE_SIGNING_IDENTITY" -v "eclipse-inst-jre-aarch64.dmg" && xcrun notarytool submit --wait --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" eclipse-inst-jre-aarch64.dmg && xcrun stapler staple eclipse-inst-jre-aarch64.dmg ) &
+              ( codesign --force --entitlements .github/workflows/entitlements.plist --options runtime -s "$APPLE_SIGNING_IDENTITY" -v "$PRODUCT_BASE/macosx/cocoa/aarch64/Eclipse Installer.app" && create-dmg --window-size 800 400 --app-drop-link 600 185 --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "eclipse-inst-aarch64.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64 && codesign --force -s "$APPLE_SIGNING_IDENTITY" -v "eclipse-inst-aarch64.dmg" && xcrun notarytool submit --wait --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" eclipse-inst-aarch64.dmg && xcrun stapler staple eclipse-inst-aarch64.dmg ) &
+              ( codesign --force --entitlements .github/workflows/entitlements.plist --options runtime -s "$APPLE_SIGNING_IDENTITY" -v "$PRODUCT_BASE.with-jre/macosx/cocoa/aarch64/Eclipse Installer.app" && create-dmg --window-size 800 400 --app-drop-link 600 185 --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "eclipse-inst-jre-aarch64.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64 && codesign --force -s "$APPLE_SIGNING_IDENTITY" -v "eclipse-inst-jre-aarch64.dmg" && xcrun notarytool submit --wait --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" eclipse-inst-jre-aarch64.dmg && xcrun stapler staple eclipse-inst-jre-aarch64.dmg ) &
               wait
               
          - name: Upload Eclipse Installer Artifact
