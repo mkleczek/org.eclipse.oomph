@@ -1,0 +1,74 @@
+name: Build Mac OS aarch64 installer
+
+on: workflow_dispatch
+
+jobs:
+   build:
+   
+      runs-on: macos-11
+   
+      env:
+         ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
+         APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+         APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+         APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+         APPLE_ID: ${{ secrets.APPLE_ID }}
+         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+         APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+         
+         PRODUCT_BASE: ./products/org.eclipse.oomph.setup.installer.product/target/products/org.eclipse.oomph.setup.installer.product
+         
+         #VOLUME_NAME: Eclipse Installer
+   
+      steps:
+         - uses: actions/checkout@v2
+         
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v2
+#        with:
+#           java-version: '17'
+#           distribution: 'zulu'
+#           cache: maven
+
+         - name: Cache Maven packages
+           uses: actions/cache@v2
+           with:
+              path: ~/.m2
+              key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+              restore-keys: ${{ runner.os }}-m2
+
+         - name: Build with Maven
+           run: JAVA_HOME=$JAVA_HOME_17_X64 mvn -B package --file pom.xml -Denv=macaarch64 -DskipTests=true
+         
+         - name: Prepare keychain
+           run: |
+               echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
+               security create-keychain -p temppwd build.keychain
+               security default-keychain -s build.keychain
+               security unlock-keychain -p temppwd build.keychain
+               security import certificate.p12 -k build.keychain -P $APPLE_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+               security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temppwd build.keychain
+
+#               Looks like SWT requires com.apple.security.cs.disable-library-validation entitlement anyway
+#               so there is no need to re-sign libraries 
+#               find . -type f -name "*.so" | tr "\n" "\0" | xargs -0 -n1 -P 0 codesign --force --options runtime -s "$APPLE_SIGNING_IDENTITY" -v
+         - name: Install create-dmg
+           run: brew install create-dmg
+               
+         - name: Sign Eclipse Installer app bundles, create, sign, notarize and staple DMGs
+           run: |
+              ( codesign --force --entitlements .github/workflows/entitlements.plist --options runtime -s "$APPLE_SIGNING_IDENTITY" -v "$PRODUCT_BASE/macosx/cocoa/aarch64/Eclipse Installer.app" && create-dmg --window-size 800 400 --app-drop-link 600 185 --icon "$PRODUCT_BASE/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "eclipse-inst-aarch64.dmg" $PRODUCT_BASE/macosx/cocoa/aarch64 && codesign --force -s "$APPLE_SIGNING_IDENTITY" -v "eclipse-inst-aarch64.dmg" && xcrun notarytool submit --wait --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" eclipse-inst-aarch64.dmg && xcrun stapler staple eclipse-inst-aarch64.dmg ) &
+              ( codesign --force --entitlements .github/workflows/entitlements.plist --options runtime -s "$APPLE_SIGNING_IDENTITY" -v "$PRODUCT_BASE.with-jre/macosx/cocoa/aarch64/Eclipse Installer.app" && create-dmg --window-size 800 400 --app-drop-link 600 185 --icon "$PRODUCT_BASE.with-jre/macos/cocoa/aarch64/Eclipse Installer.app/Contents/Resources/eclipse-inst.icns" 200 190 "eclipse-inst-jre-aarch64.dmg" $PRODUCT_BASE.with-jre/macosx/cocoa/aarch64 && codesign --force -s "$APPLE_SIGNING_IDENTITY" -v "eclipse-inst-jre-aarch64.dmg" && xcrun notarytool submit --wait --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" eclipse-inst-jre-aarch64.dmg && xcrun stapler staple eclipse-inst-jre-aarch64.dmg ) &
+              wait
+              
+         - name: Upload Eclipse Installer Artifact
+           uses: actions/upload-artifact@v2
+           with:
+              name: Eclipse Installer
+              path: eclipse-inst-aarch64.dmg
+
+         - name: Upload Eclipse Installer Artifact
+           uses: actions/upload-artifact@v2
+           with:
+              name: Eclipse Installer With JRE
+              path: eclipse-inst-jre-aarch64.dmg
